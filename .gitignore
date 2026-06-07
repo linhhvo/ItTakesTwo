@@ -1,0 +1,45 @@
+.externalNativeBuild
+.cxx
+
+# Built artifacts
+*.apk
+*.aab
+*.dex
+
+# Build directories
+build/
+.cxx/
+out/
+
+# Gradle
+.gradle/
+gradle-wrapper.jar
+local.properties
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+captures/
+*.orig
+
+# Kotlin
+*.class
+
+# NDK / CMake
+*.so
+*.o
+
+# Keystore (never commit signing keys)
+*.jks
+*.keystore
+
+# Logs
+*.log
+
+# Virtual devices
+.android/
+
+# Environment / secrets
+local.properties
+google-services.json
