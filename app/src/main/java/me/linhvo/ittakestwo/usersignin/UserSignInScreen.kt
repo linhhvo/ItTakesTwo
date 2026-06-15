@@ -1,5 +1,6 @@
-package me.linhvo.ittakestwo.usersignup
+package me.linhvo.ittakestwo.usersignin
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,26 +15,34 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import me.linhvo.ittakestwo.R
 
+//@Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun UserSignUpScreen(onCreateAccountButtonClicked: () -> Unit) {
+fun UserSignInScreen(onLogInButtonClicked: () -> Unit, onCreateAccountTextClicked: () -> Unit) {
     Scaffold { innerPadding ->
-        UserSignUp(
-            onCreateAccountButtonClicked = onCreateAccountButtonClicked,
+        UserSignIn(
+            onLogInButtonClicked = onLogInButtonClicked,
+            onCreateAccountTextClicked = onCreateAccountTextClicked,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .wrapContentSize(Alignment.Center)
+                .wrapContentSize(
+                    Alignment.Center
+                )
         )
     }
 }
 
 @Composable
-fun UserSignUp(modifier: Modifier = Modifier, onCreateAccountButtonClicked: () -> Unit) {
-    var displayName by remember { mutableStateOf("") }
+fun UserSignIn(
+    modifier: Modifier = Modifier,
+    onLogInButtonClicked: () -> Unit,
+    onCreateAccountTextClicked: () -> Unit
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val state = remember { TextFieldState() }
@@ -47,22 +56,11 @@ fun UserSignUp(modifier: Modifier = Modifier, onCreateAccountButtonClicked: () -
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Getting Started",
+            text = "Sign In",
             fontSize = 25.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 5.dp)
         )
-        Text(text = "Create an account to continue", fontSize = 16.sp)
+
         Column(modifier = Modifier.padding(top = 50.dp, bottom = 20.dp)) {
-            OutlinedTextField(
-                value = displayName,
-                leadingIcon = { Icon(painter = painterResource(R.drawable.person), contentDescription = "mail icon") },
-                onValueChange = { displayName = it },
-                label = { Text(text = "Name") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions.Default.copy(
-                    imeAction = ImeAction.Next
-                ),
-                modifier = Modifier.padding(bottom = 10.dp),
-            )
             OutlinedTextField(
                 value = email,
                 leadingIcon = { Icon(painter = painterResource(R.drawable.mail), contentDescription = "mail icon") },
@@ -83,11 +81,28 @@ fun UserSignUp(modifier: Modifier = Modifier, onCreateAccountButtonClicked: () -
                 }
             )
         }
+
         Button(
             shape = RoundedCornerShape(5.dp),
-            onClick = onCreateAccountButtonClicked
+            onClick = onLogInButtonClicked
         ) {
-            Text(text = "Create an account", fontWeight = FontWeight.SemiBold)
+            Text(text = "Sign In", fontWeight = FontWeight.SemiBold)
         }
+
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(bottom = 40.dp),
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Create a new account",
+            textDecoration = TextDecoration.Underline,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .clickable(enabled = true, onClick = onCreateAccountTextClicked)
+        )
     }
 }
