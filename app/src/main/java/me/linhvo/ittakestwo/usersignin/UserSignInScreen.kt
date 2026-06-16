@@ -22,10 +22,10 @@ import me.linhvo.ittakestwo.R
 
 //@Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun UserSignInScreen(onLogInButtonClicked: () -> Unit, onCreateAccountTextClicked: () -> Unit) {
+fun UserSignInScreen(onSignInButtonClicked: () -> Unit, onCreateAccountTextClicked: () -> Unit) {
     Scaffold { innerPadding ->
         UserSignIn(
-            onLogInButtonClicked = onLogInButtonClicked,
+            onLogInButtonClicked = onSignInButtonClicked,
             onCreateAccountTextClicked = onCreateAccountTextClicked,
             modifier = Modifier
                 .fillMaxSize()
