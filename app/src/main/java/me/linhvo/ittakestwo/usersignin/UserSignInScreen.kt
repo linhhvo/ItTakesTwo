@@ -20,7 +20,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import me.linhvo.ittakestwo.R
 
-//@Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun UserSignInScreen(onSignInButtonClicked: () -> Unit, onCreateAccountTextClicked: () -> Unit) {
     Scaffold { innerPadding ->

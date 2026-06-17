@@ -7,10 +7,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import me.linhvo.ittakestwo.navigation.AppNavBar
+import me.linhvo.ittakestwo.navigation.HomeRoute
 
 @Composable
 fun HomeScreen(onSignOutButtonClicked: () -> Unit) {
-    Scaffold { innerPadding ->
+    Scaffold(
+        bottomBar = {
+            AppNavBar(
+                currentRoute = HomeRoute
+            )
+        })
+    { innerPadding ->
         Home(
             onSignOutButtonClicked = onSignOutButtonClicked,
             modifier = Modifier

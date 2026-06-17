@@ -19,77 +19,74 @@ import me.linhvo.ittakestwo.home.HomeScreen
 import me.linhvo.ittakestwo.usersignin.UserSignInScreen
 import me.linhvo.ittakestwo.usersignup.UserSignUpScreen
 
-sealed interface TopLevelScreen {
+sealed interface TopLevelRoute {
     @get:DrawableRes
-    val iconId: Int
+    val iconSelected: Int
+
+    @get:DrawableRes
+    val iconUnselected: Int
 }
 
-private data object HomeScreen : TopLevelScreen {
-    override val iconId = R.drawable.home
+data object HomeRoute : TopLevelRoute {
+    override val iconSelected = R.drawable.home_selected
+    override val iconUnselected = R.drawable.home_unselected
 }
 
-private data object ChatScreen : TopLevelScreen {
-    override val iconId = R.drawable.chat
+data object ChatRoute : TopLevelRoute {
+    override val iconSelected = R.drawable.chat_selected
+    override val iconUnselected = R.drawable.chat_unselected
 }
 
-private data object SettingsScreen : TopLevelScreen {
-    override val iconId = R.drawable.gear
+data object SettingsRoute : TopLevelRoute {
+    override val iconSelected = R.drawable.gear_selected
+    override val iconUnselected = R.drawable.gear_unselected
 }
 
-private data object SignInScreen : NavKey {
+private data object SignInRoute : NavKey {
 }
 
-private data object SignUpScreen : NavKey
+private data object SignUpRoute : NavKey
 
-private val TOP_LEVEL_SCREENS: List<TopLevelScreen> = listOf(HomeScreen, ChatScreen, SettingsScreen)
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun AppNavigation() {
 
-    var isSignedIn by rememberSaveable { mutableStateOf(false) }
-    val topLevelBackStack = remember { TopLevelBackStack<Any>(HomeScreen) }
+    /*TODO: Move state to ViewModel with auth logic*/
+    var isSignedIn by rememberSaveable { mutableStateOf(true) }
+    val topLevelBackStack = remember { TopLevelBackStack<Any>(HomeRoute) }
 
-    Scaffold(
-        bottomBar = {
-            if (isSignedIn) {
-                AppNavBar(
-                    topLevelBackStack = topLevelBackStack,
-                    topLevelScreens = TOP_LEVEL_SCREENS
-                )
-            }
-        }
-    ) { _ ->
+    Scaffold { _ ->
         NavDisplay(
             backStack = topLevelBackStack.backStack,
             onBack = { topLevelBackStack.removeLast() },
             entryProvider = entryProvider {
-                entry<HomeScreen> {
+                entry<HomeRoute> {
                     if (isSignedIn) {
                         HomeScreen(onSignOutButtonClicked = dropUnlessResumed {
                             isSignedIn = false
                         })
                     } else {
                         LaunchedEffect(null) {
-                            topLevelBackStack.add(SignInScreen)
+                            topLevelBackStack.add(SignInRoute)
 //                            Log.d("Backstack", topLevelBackStack.backStack.toString())
                         }
                     }
                 }
-                entry<SignInScreen> {
+                entry<SignInRoute> {
                     UserSignInScreen(
                         onSignInButtonClicked = dropUnlessResumed {
                             isSignedIn = true
                             topLevelBackStack.removeLast()
 //                            Log.d("Backstack", topLevelBackStack.backStack.toString())
                         },
-                        onCreateAccountTextClicked = dropUnlessResumed { topLevelBackStack.add(SignUpScreen) })
+                        onCreateAccountTextClicked = dropUnlessResumed { topLevelBackStack.add(SignUpRoute) })
                 }
-                entry<SignUpScreen> {
+                entry<SignUpRoute> {
                     UserSignUpScreen(onCreateAccountButtonClicked = dropUnlessResumed {
                         isSignedIn = true
                         topLevelBackStack.backStack.clear()
-                        topLevelBackStack.add(HomeScreen)
+                        topLevelBackStack.add(HomeRoute)
                     })
                 }
             },
