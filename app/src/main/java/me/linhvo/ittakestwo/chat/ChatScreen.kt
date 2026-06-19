@@ -1,7 +1,6 @@
-package me.linhvo.ittakestwo.home
+package me.linhvo.ittakestwo.chat
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -9,10 +8,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
 @Composable
-fun HomeScreen(onSignOutButtonClicked: () -> Unit) {
+fun ChatScreen() {
     Scaffold { innerPadding ->
-        HomeContent(
-            onSignOutButtonClicked = onSignOutButtonClicked,
+        ChatContent(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
@@ -22,15 +20,12 @@ fun HomeScreen(onSignOutButtonClicked: () -> Unit) {
 }
 
 @Composable
-fun HomeContent(modifier: Modifier = Modifier, onSignOutButtonClicked: () -> Unit) {
+fun ChatContent(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Row() {
-            
-        }
-        Button(onClick = onSignOutButtonClicked) { Text(text = "Sign Out") }
+        Text(text = "Chat screen")
     }
 }
