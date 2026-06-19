@@ -26,7 +26,7 @@ val NAV_ROUTES: List<Route.BottomNavRoute> =
 fun AppNavigation() {
 
     /*TODO: Move state to ViewModel with auth logic*/
-    var isSignedIn by rememberSaveable { mutableStateOf(false) }
+    var isSignedIn by rememberSaveable { mutableStateOf(true) }
     val startRoute = Route.Home
     val backStack = rememberNavBackStack(startRoute)
 
@@ -86,9 +86,11 @@ fun AppNavigation() {
                 }
                 entry<Route.Home> {
                     if (isSignedIn) {
-                        HomeScreen(onSignOutButtonClicked = dropUnlessResumed {
-                            isSignedIn = false
-                        })
+                        HomeScreen(
+//                            onSignOutButtonClicked = dropUnlessResumed {
+//                            isSignedIn = false
+//                        }
+                        )
                     } else {
                         LaunchedEffect(null) {
                             backStack.add(Route.SignIn)
