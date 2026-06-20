@@ -1,11 +1,16 @@
 package me.linhvo.ittakestwo.navigation
 
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
@@ -13,12 +18,26 @@ import androidx.navigation3.runtime.NavKey
 
 @Composable
 fun AppNavBar(
+    modifier: Modifier = Modifier,
     currentRoute: NavKey,
     onNavItemClicked: (Route.BottomNavRoute) -> Unit
 ) {
-    NavigationBar(
-        containerColor = Color.Transparent,
-        modifier = Modifier.height(70.dp)
+    val containerColor = MaterialTheme.colorScheme.onPrimaryContainer
+    Row(
+        modifier = modifier
+            .height(60.dp)
+            .width(230.dp)
+            .drawBehind {
+                drawRoundRect(
+                    color = containerColor.copy(alpha = .05f),
+                    cornerRadius = CornerRadius(10.dp.toPx()),
+                )
+                drawRoundRect(
+                    color = containerColor.copy(alpha = .2f),
+                    cornerRadius = CornerRadius(10.dp.toPx()),
+                    style = Stroke(width = 3f)
+                )
+            }
     ) {
         NAV_ROUTES.forEach { route ->
             val isSelected = route == currentRoute
@@ -57,7 +76,8 @@ fun AppNavBar(
                 },
                 alwaysShowLabel = false,
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    unselectedIconColor = MaterialTheme.colorScheme.secondary,
                     indicatorColor = Color.Transparent
                 ),
             )
