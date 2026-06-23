@@ -51,12 +51,11 @@ fun SignInContent(
 
     val signInViewModel: SignInViewModel = viewModel()
     val email = signInViewModel.email.collectAsStateWithLifecycle()
+    val signInState = signInViewModel.signInState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(null) {
-        signInViewModel.success.collect { success ->
-            if (success) {
-                onSignInSuccess()
-            }
+    LaunchedEffect(signInState.value) {
+        if (signInState.value) {
+            onSignInSuccess()
         }
     }
 

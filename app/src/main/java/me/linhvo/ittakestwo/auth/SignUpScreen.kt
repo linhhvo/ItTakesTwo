@@ -43,12 +43,11 @@ fun SignUpContent(modifier: Modifier = Modifier, onSignUpSuccess: () -> Unit) {
     val signUpViewModel: SignUpViewModel = viewModel()
     val displayName = signUpViewModel.displayName.collectAsStateWithLifecycle()
     val email = signUpViewModel.email.collectAsStateWithLifecycle()
+    val signUpState = signUpViewModel.signUpState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(null) {
-        signUpViewModel.success.collect { success ->
-            if (success) {
-                onSignUpSuccess()
-            }
+    LaunchedEffect(signUpState.value) {
+        if (signUpState.value) {
+            onSignUpSuccess()
         }
     }
 

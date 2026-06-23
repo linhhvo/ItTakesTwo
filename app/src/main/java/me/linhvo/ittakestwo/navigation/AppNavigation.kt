@@ -1,6 +1,7 @@
 package me.linhvo.ittakestwo.navigation
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
@@ -69,9 +70,11 @@ fun AppNavigation() {
                             )
                         }
                     }) {
+                        Log.d("backstack", backStack.toList().toString())
                         SignInScreen(onSignInSuccess = dropUnlessResumed {
                             navViewModel.userSignIn()
-                            backStack.removeLast()
+                            backStack.clear()
+                            backStack.add(Route.Home)
                         }, onCreateAccountTextClick = dropUnlessResumed {
                             backStack.add(Route.SignUp)
                         })
@@ -83,6 +86,7 @@ fun AppNavigation() {
                             )
                         }
                     }) {
+                        Log.d("backstack", backStack.toList().toString())
                         SignUpScreen(onSignUpSuccess = dropUnlessResumed {
                             navViewModel.userSignIn()
                             backStack.clear()
@@ -98,22 +102,26 @@ fun AppNavigation() {
                             )
                         }
                     }) {
+                        Log.d("backstack", backStack.toList().toString())
                         if (isSignedIn) {
                             HomeScreen(
-                                onSignOutButtonClicked = dropUnlessResumed {
+                                onSignOutSuccess = dropUnlessResumed {
                                     navViewModel.userSignOut()
                                 }
                             )
                         } else {
                             LaunchedEffect(null) {
+                                backStack.clear()
                                 backStack.add(Route.SignIn)
                             }
                         }
                     }
                     entry<Route.Chat> {
+                        Log.d("backstack", backStack.toList().toString())
                         ChatScreen()
                     }
                     entry<Route.Settings> {
+                        Log.d("backstack", backStack.toList().toString())
                         SettingsScreen()
 
                     }

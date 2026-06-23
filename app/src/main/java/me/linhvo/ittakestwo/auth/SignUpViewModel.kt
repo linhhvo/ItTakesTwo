@@ -1,23 +1,24 @@
 package me.linhvo.ittakestwo.auth
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import me.linhvo.ittakestwo.data.AuthRepository
 
 class SignUpViewModel : ViewModel() {
 
-    val authRepository = AuthRepository()
+    private val authRepository = AuthRepository()
     private val _displayName = MutableStateFlow("")
     val displayName = _displayName.asStateFlow()
 
     private val _email = MutableStateFlow("")
     val email = _email.asStateFlow()
 
-    private val _success = MutableSharedFlow<Boolean>()
-    val success: SharedFlow<Boolean>
-        get() = _success.asSharedFlow()
+    private val _signUpState = MutableStateFlow(false)
+    val signUpState = _signUpState.asStateFlow()
 
     fun onDisplayNameChange(displayName: String) {
         _displayName.value = displayName
@@ -30,8 +31,17 @@ class SignUpViewModel : ViewModel() {
     fun onSignUpButtonClick(password: CharSequence) {
         val passwordStr = password.toString()
         viewModelScope.launch {
-            val result = authRepository.signUp(name = displayName.value, email = email.value, password = passwordStr)
-            _success.emit(result)
+            _signUpState.value =
+                authRepository.signUp(name = displayName.value, email = email.value, password = passwordStr)
         }
+    }
+
+    init {
+        Log.d("view_model", "sign up vm started")
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.d("view_model", "sign up vm cleared")
     }
 }
