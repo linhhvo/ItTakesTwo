@@ -1,4 +1,4 @@
-package me.linhvo.ittakestwo.usersignin
+package me.linhvo.ittakestwo.auth
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -8,9 +8,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -18,14 +21,16 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import me.linhvo.ittakestwo.R
 
 @Composable
-fun UserSignInScreen(onSignInButtonClicked: () -> Unit, onCreateAccountTextClicked: () -> Unit) {
+fun SignInScreen(onSignInSuccess: () -> Unit, onCreateAccountTextClick: () -> Unit) {
     Scaffold { innerPadding ->
-        UserSignIn(
-            onLogInButtonClicked = onSignInButtonClicked,
-            onCreateAccountTextClicked = onCreateAccountTextClicked,
+        SignInContent(
+            onSignInSuccess = onSignInSuccess,
+            onCreateAccountTextClick = onCreateAccountTextClick,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
@@ -37,14 +42,23 @@ fun UserSignInScreen(onSignInButtonClicked: () -> Unit, onCreateAccountTextClick
 }
 
 @Composable
-fun UserSignIn(
+fun SignInContent(
     modifier: Modifier = Modifier,
-    onLogInButtonClicked: () -> Unit,
-    onCreateAccountTextClicked: () -> Unit
+    onSignInSuccess: () -> Unit,
+    onCreateAccountTextClick: () -> Unit
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    val state = remember { TextFieldState() }
+    val passwordTextFieldState = remember { TextFieldState() }
+
+    val signInViewModel: SignInViewModel = viewModel()
+    val email = signInViewModel.email.collectAsStateWithLifecycle()
+
+    LaunchedEffect(null) {
+        signInViewModel.success.collect { success ->
+            if (success) {
+                onSignInSuccess()
+            }
+        }
+    }
 
     Column(
         modifier = modifier
@@ -61,9 +75,9 @@ fun UserSignIn(
 
         Column(modifier = Modifier.padding(top = 50.dp, bottom = 20.dp)) {
             OutlinedTextField(
-                value = email,
+                value = email.value,
                 leadingIcon = { Icon(painter = painterResource(R.drawable.mail), contentDescription = "mail icon") },
-                onValueChange = { email = it },
+                onValueChange = { signInViewModel.onEmailChange(it) },
                 label = { Text(text = "Email") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions.Default.copy(
@@ -73,7 +87,7 @@ fun UserSignIn(
                 modifier = Modifier.padding(bottom = 10.dp),
             )
             OutlinedSecureTextField(
-                state = state,
+                state = passwordTextFieldState,
                 label = { Text(text = "Password") },
                 leadingIcon = {
                     Icon(painter = painterResource(R.drawable.lock), contentDescription = "lock icon")
@@ -81,9 +95,13 @@ fun UserSignIn(
             )
         }
 
+        val localSoftwareKeyboardController = LocalSoftwareKeyboardController.current
         Button(
             shape = RoundedCornerShape(5.dp),
-            onClick = onLogInButtonClicked
+            onClick = {
+                localSoftwareKeyboardController?.hide()
+                signInViewModel.onSignInButtonClick(passwordTextFieldState.text)
+            }
         ) {
             Text(text = "Sign In", fontWeight = FontWeight.SemiBold)
         }
@@ -101,7 +119,7 @@ fun UserSignIn(
             textDecoration = TextDecoration.Underline,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier
-                .clickable(enabled = true, onClick = onCreateAccountTextClicked)
+                .clickable(enabled = true, onClick = onCreateAccountTextClick)
         )
     }
 }

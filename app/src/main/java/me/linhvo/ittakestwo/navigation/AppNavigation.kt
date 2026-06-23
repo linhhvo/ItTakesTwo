@@ -22,8 +22,8 @@ import androidx.navigation3.runtime.metadata
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import me.linhvo.ittakestwo.auth.SignInScreen
 import me.linhvo.ittakestwo.auth.SignUpScreen
-import me.linhvo.ittakestwo.auth.UserSignInScreen
 import me.linhvo.ittakestwo.chat.ChatScreen
 import me.linhvo.ittakestwo.home.HomeScreen
 import me.linhvo.ittakestwo.settings.SettingsScreen
@@ -69,10 +69,10 @@ fun AppNavigation() {
                             )
                         }
                     }) {
-                        UserSignInScreen(onSignInButtonClicked = dropUnlessResumed {
+                        SignInScreen(onSignInSuccess = dropUnlessResumed {
                             navViewModel.userSignIn()
                             backStack.removeLast()
-                        }, onCreateAccountTextClicked = dropUnlessResumed {
+                        }, onCreateAccountTextClick = dropUnlessResumed {
                             backStack.add(Route.SignUp)
                         })
                     }
