@@ -12,7 +12,7 @@ class NavViewModel : ViewModel() {
         _isSignedIn.value = true
     }
 
-    fun useSignOut() {
+    fun userSignOut() {
         _isSignedIn.value = false
     }
 }

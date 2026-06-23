@@ -1,4 +1,4 @@
-package me.linhvo.ittakestwo.usersignup
+package me.linhvo.ittakestwo.auth
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -7,22 +7,27 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import me.linhvo.ittakestwo.R
 
 @Composable
-fun UserSignUpScreen(onCreateAccountButtonClicked: () -> Unit) {
+fun SignUpScreen(onSignUpSuccess: () -> Unit) {
     Scaffold { innerPadding ->
-        UserSignUp(
-            onCreateAccountButtonClicked = onCreateAccountButtonClicked,
+        SignUpContent(
+            onSignUpSuccess = onSignUpSuccess,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
@@ -32,11 +37,20 @@ fun UserSignUpScreen(onCreateAccountButtonClicked: () -> Unit) {
 }
 
 @Composable
-fun UserSignUp(modifier: Modifier = Modifier, onCreateAccountButtonClicked: () -> Unit) {
-    var displayName by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    val state = remember { TextFieldState() }
+fun SignUpContent(modifier: Modifier = Modifier, onSignUpSuccess: () -> Unit) {
+    val passwordTextFieldState = remember { TextFieldState() }
+
+    val signUpViewModel: SignUpViewModel = viewModel()
+    val displayName = signUpViewModel.displayName.collectAsStateWithLifecycle()
+    val email = signUpViewModel.email.collectAsStateWithLifecycle()
+
+    LaunchedEffect(null) {
+        signUpViewModel.success.collect { success ->
+            if (success) {
+                onSignUpSuccess()
+            }
+        }
+    }
 
     Column(
         modifier = modifier
@@ -53,9 +67,9 @@ fun UserSignUp(modifier: Modifier = Modifier, onCreateAccountButtonClicked: () -
         Text(text = "Create an account to continue", fontSize = 16.sp)
         Column(modifier = Modifier.padding(top = 50.dp, bottom = 20.dp)) {
             OutlinedTextField(
-                value = displayName,
+                value = displayName.value,
                 leadingIcon = { Icon(painter = painterResource(R.drawable.person), contentDescription = "mail icon") },
-                onValueChange = { displayName = it },
+                onValueChange = { signUpViewModel.onDisplayNameChange(it) },
                 label = { Text(text = "Name") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions.Default.copy(
@@ -64,9 +78,9 @@ fun UserSignUp(modifier: Modifier = Modifier, onCreateAccountButtonClicked: () -
                 modifier = Modifier.padding(bottom = 10.dp),
             )
             OutlinedTextField(
-                value = email,
+                value = email.value,
                 leadingIcon = { Icon(painter = painterResource(R.drawable.mail), contentDescription = "mail icon") },
-                onValueChange = { email = it },
+                onValueChange = { signUpViewModel.onEmailChange(it) },
                 label = { Text(text = "Email") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions.Default.copy(
@@ -76,16 +90,21 @@ fun UserSignUp(modifier: Modifier = Modifier, onCreateAccountButtonClicked: () -
                 modifier = Modifier.padding(bottom = 10.dp),
             )
             OutlinedSecureTextField(
-                state = state,
+                state = passwordTextFieldState,
                 label = { Text(text = "Password") },
                 leadingIcon = {
                     Icon(painter = painterResource(R.drawable.lock), contentDescription = "lock icon")
                 }
             )
         }
+
+        val localSoftwareKeyboardController = LocalSoftwareKeyboardController.current
         Button(
             shape = RoundedCornerShape(5.dp),
-            onClick = onCreateAccountButtonClicked
+            onClick = {
+                localSoftwareKeyboardController?.hide()
+                signUpViewModel.onSignUpButtonClick(passwordTextFieldState.text)
+            }
         ) {
             Text(text = "Create an account", fontWeight = FontWeight.SemiBold)
         }

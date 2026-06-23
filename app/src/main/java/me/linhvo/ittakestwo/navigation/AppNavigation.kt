@@ -1,7 +1,6 @@
 package me.linhvo.ittakestwo.navigation
 
 import android.annotation.SuppressLint
-import android.util.Log
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
@@ -17,12 +16,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.metadata
 import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import me.linhvo.ittakestwo.auth.SignUpScreen
 import me.linhvo.ittakestwo.auth.UserSignInScreen
-import me.linhvo.ittakestwo.auth.UserSignUpScreen
 import me.linhvo.ittakestwo.chat.ChatScreen
 import me.linhvo.ittakestwo.home.HomeScreen
 import me.linhvo.ittakestwo.settings.SettingsScreen
@@ -35,7 +36,6 @@ val NAV_ROUTES: List<Route.BottomNavRoute> =
 @Composable
 fun AppNavigation() {
 
-    /*TODO: Move state to ViewModel with auth logic*/
     val startRoute = Route.Home
     val backStack = rememberNavBackStack(startRoute)
 
@@ -49,6 +49,10 @@ fun AppNavigation() {
         ) {
             NavDisplay(
                 backStack = backStack,
+                entryDecorators = listOf(
+                    rememberSaveableStateHolderNavEntryDecorator(),
+                    rememberViewModelStoreNavEntryDecorator()
+                ),
                 onBack = {
                     if (backStack.last() is Route.BottomNavRoute) {
                         backStack.clear()
@@ -79,7 +83,7 @@ fun AppNavigation() {
                             )
                         }
                     }) {
-                        UserSignUpScreen(onCreateAccountButtonClicked = dropUnlessResumed {
+                        SignUpScreen(onSignUpSuccess = dropUnlessResumed {
                             navViewModel.userSignIn()
                             backStack.clear()
                             backStack.add(Route.Home)
@@ -97,7 +101,7 @@ fun AppNavigation() {
                         if (isSignedIn) {
                             HomeScreen(
                                 onSignOutButtonClicked = dropUnlessResumed {
-                                    navViewModel.useSignOut()
+                                    navViewModel.userSignOut()
                                 }
                             )
                         } else {
@@ -139,7 +143,6 @@ fun AppNavigation() {
                     currentRoute = backStack.last(),
                     onNavItemClicked = {
                         backStack.add(it)
-                        Log.d("Backstack", backStack.toList().toString())
                     }
                 )
             }
