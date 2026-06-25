@@ -18,6 +18,9 @@ class SignInViewModel : ViewModel() {
     private val _signInState = MutableStateFlow(false)
     val signInState = _signInState.asStateFlow()
 
+    private val _errorMessage = MutableStateFlow("")
+    val errorMessage = _errorMessage.asStateFlow()
+
     fun onEmailChange(email: String) {
         _email.value = email
     }
@@ -25,8 +28,12 @@ class SignInViewModel : ViewModel() {
     fun onSignInButtonClick(password: CharSequence) {
         val passwordStr = password.toString()
         viewModelScope.launch {
-            val result = authRepository.signIn(email = email.value, password = passwordStr)
-            _signInState.value = result
+            authRepository.signIn(email = email.value, password = passwordStr).onSuccess {
+                _signInState.value = true
+            }.onFailure {
+                _signInState.value = false
+                _errorMessage.value = it.message ?: ""
+            }
         }
     }
 

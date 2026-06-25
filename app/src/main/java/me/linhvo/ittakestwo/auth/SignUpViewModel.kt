@@ -20,6 +20,9 @@ class SignUpViewModel : ViewModel() {
     private val _signUpState = MutableStateFlow(false)
     val signUpState = _signUpState.asStateFlow()
 
+    private val _errorMessage = MutableStateFlow("")
+    val errorMessage = _errorMessage.asStateFlow()
+
     fun onDisplayNameChange(displayName: String) {
         _displayName.value = displayName
     }
@@ -31,8 +34,12 @@ class SignUpViewModel : ViewModel() {
     fun onSignUpButtonClick(password: CharSequence) {
         val passwordStr = password.toString()
         viewModelScope.launch {
-            _signUpState.value =
-                authRepository.signUp(name = displayName.value, email = email.value, password = passwordStr)
+            authRepository.signUp(name = displayName.value, email = email.value, password = passwordStr).onSuccess {
+                _signUpState.value = true
+            }.onFailure {
+                _signUpState.value = false
+                _errorMessage.value = it.message ?: ""
+            }
         }
     }
 

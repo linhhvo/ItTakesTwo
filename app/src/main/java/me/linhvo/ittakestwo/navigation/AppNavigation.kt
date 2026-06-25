@@ -2,15 +2,16 @@ package me.linhvo.ittakestwo.navigation
 
 import android.annotation.SuppressLint
 import android.util.Log
-import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -19,10 +20,10 @@ import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
-import androidx.navigation3.runtime.metadata
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import io.github.jan.supabase.auth.status.SessionStatus
 import me.linhvo.ittakestwo.auth.SignInScreen
 import me.linhvo.ittakestwo.auth.SignUpScreen
 import me.linhvo.ittakestwo.chat.ChatScreen
@@ -41,7 +42,7 @@ fun AppNavigation() {
     val backStack = rememberNavBackStack(startRoute)
 
     val navViewModel: NavViewModel = viewModel()
-    val isSignedIn by navViewModel.isSignedIn.collectAsStateWithLifecycle()
+    val sessionStatus = navViewModel.sessionStatus.collectAsStateWithLifecycle()
 
     Scaffold { _ ->
         Box(
@@ -63,59 +64,40 @@ fun AppNavigation() {
                     }
                 },
                 entryProvider = entryProvider {
-                    entry<Route.SignIn>(metadata = metadata {
-                        put(NavDisplay.PopTransitionKey) {
-                            EnterTransition.None togetherWith slideOutVertically(
-                                targetOffsetY = { -it }, animationSpec = tween(500)
-                            )
-                        }
-                    }) {
+                    entry<Route.Home> {
                         Log.d("backstack", backStack.toList().toString())
-                        SignInScreen(onSignInSuccess = dropUnlessResumed {
-                            navViewModel.userSignIn()
-                            backStack.clear()
-                            backStack.add(Route.Home)
-                        }, onCreateAccountTextClick = dropUnlessResumed {
-                            backStack.add(Route.SignUp)
-                        })
-                    }
-                    entry<Route.SignUp>(metadata = metadata {
-                        put(NavDisplay.PopTransitionKey) {
-                            EnterTransition.None togetherWith slideOutVertically(
-                                targetOffsetY = { -it }, animationSpec = tween(500)
-                            )
-                        }
-                    }) {
-                        Log.d("backstack", backStack.toList().toString())
-                        SignUpScreen(onSignUpSuccess = dropUnlessResumed {
-                            navViewModel.userSignIn()
-                            backStack.clear()
-                            backStack.add(Route.Home)
-                        })
-                    }
-                    entry<Route.Home>(metadata = metadata {
-                        put(NavDisplay.TransitionKey) {
-                            slideInHorizontally(
-                                initialOffsetX = { -it }, animationSpec = tween(500)
-                            ) togetherWith slideOutHorizontally(
-                                targetOffsetX = { it }, animationSpec = tween(500)
-                            )
-                        }
-                    }) {
-                        Log.d("backstack", backStack.toList().toString())
-                        if (isSignedIn) {
-                            HomeScreen(
-                                onSignOutSuccess = dropUnlessResumed {
-                                    navViewModel.userSignOut()
+                        when (sessionStatus.value) {
+                            is SessionStatus.Authenticated -> {
+                                HomeScreen()
+                            }
+
+                            else -> {
+                                LaunchedEffect(null) {
+                                    backStack.clear()
+                                    backStack.add(Route.SignIn)
                                 }
-                            )
-                        } else {
-                            LaunchedEffect(null) {
-                                backStack.clear()
-                                backStack.add(Route.SignIn)
                             }
                         }
                     }
+                    entry<Route.SignIn> {
+                        Log.d("backstack", backStack.toList().toString())
+                        SignInScreen(
+                            onSignInSuccess = dropUnlessResumed {
+                                backStack.clear()
+                                backStack.add(Route.Home)
+                            },
+                            onCreateAccountTextClick = dropUnlessResumed {
+                                backStack.add(Route.SignUp)
+                            })
+                    }
+                    entry<Route.SignUp> {
+                        Log.d("backstack", backStack.toList().toString())
+                        SignUpScreen(onSignUpSuccess = dropUnlessResumed {
+                            backStack.clear()
+                            backStack.add(Route.Home)
+                        })
+                    }
+
                     entry<Route.Chat> {
                         Log.d("backstack", backStack.toList().toString())
                         ChatScreen()
@@ -150,7 +132,12 @@ fun AppNavigation() {
                     modifier = Modifier.padding(bottom = 30.dp),
                     currentRoute = backStack.last(),
                     onNavItemClicked = {
-                        backStack.add(it)
+                        if (it != Route.Home) {
+                            backStack.add(it)
+                        } else {
+                            backStack.clear()
+                            backStack.add(Route.Home)
+                        }
                     }
                 )
             }

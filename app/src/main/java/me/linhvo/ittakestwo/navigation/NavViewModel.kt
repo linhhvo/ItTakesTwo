@@ -1,18 +1,14 @@
 package me.linhvo.ittakestwo.navigation
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import me.linhvo.ittakestwo.data.AuthRepository
 
-class NavViewModel : ViewModel() {
-    private val _isSignedIn = MutableStateFlow(false)
-    val isSignedIn = _isSignedIn.asStateFlow()
+class NavViewModel(
+    private val savedStateHandle: SavedStateHandle,
+) :
+    ViewModel() {
+    private val authRepository = AuthRepository()
 
-    fun userSignIn() {
-        _isSignedIn.value = true
-    }
-
-    fun userSignOut() {
-        _isSignedIn.value = false
-    }
+    val sessionStatus = authRepository.getSession()
 }
