@@ -20,7 +20,6 @@ class HomeViewModel : ViewModel() {
     private val _errorMessage = MutableStateFlow("")
     val errorMessage = _errorMessage.asStateFlow()
 
-
     fun signOut() {
         viewModelScope.launch {
             authRepository.signOut().onFailure {

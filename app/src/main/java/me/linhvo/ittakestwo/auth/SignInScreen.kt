@@ -9,7 +9,7 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,10 +26,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import me.linhvo.ittakestwo.R
 
 @Composable
-fun SignInScreen(onSignInSuccess: () -> Unit, onCreateAccountTextClick: () -> Unit) {
+fun SignInScreen(onCreateAccountTextClick: () -> Unit) {
     Scaffold { innerPadding ->
         SignInContent(
-            onSignInSuccess = onSignInSuccess,
             onCreateAccountTextClick = onCreateAccountTextClick,
             modifier = Modifier
                 .fillMaxSize()
@@ -44,20 +43,12 @@ fun SignInScreen(onSignInSuccess: () -> Unit, onCreateAccountTextClick: () -> Un
 @Composable
 fun SignInContent(
     modifier: Modifier = Modifier,
-    onSignInSuccess: () -> Unit,
     onCreateAccountTextClick: () -> Unit
 ) {
     val passwordTextFieldState = remember { TextFieldState() }
 
     val signInViewModel: SignInViewModel = viewModel()
-    val email = signInViewModel.email.collectAsStateWithLifecycle()
-    val signInState = signInViewModel.signInState.collectAsStateWithLifecycle()
-
-    LaunchedEffect(signInState.value) {
-        if (signInState.value) {
-            onSignInSuccess()
-        }
-    }
+    val email by signInViewModel.email.collectAsStateWithLifecycle()
 
     Column(
         modifier = modifier
@@ -74,7 +65,7 @@ fun SignInContent(
 
         Column(modifier = Modifier.padding(top = 50.dp, bottom = 20.dp)) {
             OutlinedTextField(
-                value = email.value,
+                value = email,
                 leadingIcon = { Icon(painter = painterResource(R.drawable.mail), contentDescription = "mail icon") },
                 onValueChange = { signInViewModel.onEmailChange(it) },
                 label = { Text(text = "Email") },

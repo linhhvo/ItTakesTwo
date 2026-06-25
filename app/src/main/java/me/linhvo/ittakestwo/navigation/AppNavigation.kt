@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -30,9 +31,6 @@ import me.linhvo.ittakestwo.chat.ChatScreen
 import me.linhvo.ittakestwo.home.HomeScreen
 import me.linhvo.ittakestwo.settings.SettingsScreen
 
-val NAV_ROUTES: List<Route.BottomNavRoute> =
-    listOf(Route.Home, Route.Chat, Route.Settings)
-
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 //@Preview(showSystemUi = true)
 @Composable
@@ -42,7 +40,21 @@ fun AppNavigation() {
     val backStack = rememberNavBackStack(startRoute)
 
     val navViewModel: NavViewModel = viewModel()
-    val sessionStatus = navViewModel.sessionStatus.collectAsStateWithLifecycle()
+    val sessionStatus by navViewModel.sessionStatus.collectAsStateWithLifecycle()
+
+    LaunchedEffect(sessionStatus) {
+        when (sessionStatus) {
+            is SessionStatus.Authenticated -> {
+                backStack.clear()
+                backStack.add(Route.Home)
+            }
+
+            else -> {
+                backStack.clear()
+                backStack.add(Route.SignIn)
+            }
+        }
+    }
 
     Scaffold { _ ->
         Box(
@@ -65,45 +77,27 @@ fun AppNavigation() {
                 },
                 entryProvider = entryProvider {
                     entry<Route.Home> {
-                        Log.d("backstack", backStack.toList().toString())
-                        when (sessionStatus.value) {
-                            is SessionStatus.Authenticated -> {
-                                HomeScreen()
-                            }
-
-                            else -> {
-                                LaunchedEffect(null) {
-                                    backStack.clear()
-                                    backStack.add(Route.SignIn)
-                                }
-                            }
-                        }
+                        Log.d("backstack -- Home", backStack.toList().toString())
+                        HomeScreen()
                     }
                     entry<Route.SignIn> {
-                        Log.d("backstack", backStack.toList().toString())
+                        Log.d("backstack -- Signin", backStack.toList().toString())
                         SignInScreen(
-                            onSignInSuccess = dropUnlessResumed {
-                                backStack.clear()
-                                backStack.add(Route.Home)
-                            },
                             onCreateAccountTextClick = dropUnlessResumed {
                                 backStack.add(Route.SignUp)
                             })
                     }
                     entry<Route.SignUp> {
-                        Log.d("backstack", backStack.toList().toString())
-                        SignUpScreen(onSignUpSuccess = dropUnlessResumed {
-                            backStack.clear()
-                            backStack.add(Route.Home)
-                        })
+                        Log.d("backstack -- Signup", backStack.toList().toString())
+                        SignUpScreen()
                     }
 
                     entry<Route.Chat> {
-                        Log.d("backstack", backStack.toList().toString())
+                        Log.d("backstack -- chat", backStack.toList().toString())
                         ChatScreen()
                     }
                     entry<Route.Settings> {
-                        Log.d("backstack", backStack.toList().toString())
+                        Log.d("backstack -- settings", backStack.toList().toString())
                         SettingsScreen()
 
                     }

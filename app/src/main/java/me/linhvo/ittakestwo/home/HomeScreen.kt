@@ -47,7 +47,7 @@ fun HomeContent() {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box() {
+        Box {
             // partner's profile picture
             Box(
                 modifier = Modifier

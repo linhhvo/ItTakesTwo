@@ -8,8 +8,9 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -24,10 +25,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import me.linhvo.ittakestwo.R
 
 @Composable
-fun SignUpScreen(onSignUpSuccess: () -> Unit) {
+fun SignUpScreen() {
     Scaffold { innerPadding ->
         SignUpContent(
-            onSignUpSuccess = onSignUpSuccess,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
@@ -37,19 +37,15 @@ fun SignUpScreen(onSignUpSuccess: () -> Unit) {
 }
 
 @Composable
-fun SignUpContent(modifier: Modifier = Modifier, onSignUpSuccess: () -> Unit) {
+fun SignUpContent(modifier: Modifier = Modifier) {
     val passwordTextFieldState = remember { TextFieldState() }
 
     val signUpViewModel: SignUpViewModel = viewModel()
-    val displayName = signUpViewModel.displayName.collectAsStateWithLifecycle()
-    val email = signUpViewModel.email.collectAsStateWithLifecycle()
-    val signUpState = signUpViewModel.signUpState.collectAsStateWithLifecycle()
+    val displayName by signUpViewModel.displayName.collectAsStateWithLifecycle()
+    val email by signUpViewModel.email.collectAsStateWithLifecycle()
 
-    LaunchedEffect(signUpState.value) {
-        if (signUpState.value) {
-            onSignUpSuccess()
-        }
-    }
+    val scope = rememberCoroutineScope()
+    val snackBarHostState = remember { SnackbarHostState() }
 
     Column(
         modifier = modifier
@@ -66,7 +62,7 @@ fun SignUpContent(modifier: Modifier = Modifier, onSignUpSuccess: () -> Unit) {
         Text(text = "Create an account to continue", fontSize = 16.sp)
         Column(modifier = Modifier.padding(top = 50.dp, bottom = 20.dp)) {
             OutlinedTextField(
-                value = displayName.value,
+                value = displayName,
                 leadingIcon = { Icon(painter = painterResource(R.drawable.person), contentDescription = "mail icon") },
                 onValueChange = { signUpViewModel.onDisplayNameChange(it) },
                 label = { Text(text = "Name") },
@@ -77,7 +73,7 @@ fun SignUpContent(modifier: Modifier = Modifier, onSignUpSuccess: () -> Unit) {
                 modifier = Modifier.padding(bottom = 10.dp),
             )
             OutlinedTextField(
-                value = email.value,
+                value = email,
                 leadingIcon = { Icon(painter = painterResource(R.drawable.mail), contentDescription = "mail icon") },
                 onValueChange = { signUpViewModel.onEmailChange(it) },
                 label = { Text(text = "Email") },

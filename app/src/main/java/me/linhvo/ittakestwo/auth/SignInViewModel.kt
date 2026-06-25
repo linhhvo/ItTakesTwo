@@ -9,14 +9,10 @@ import kotlinx.coroutines.launch
 import me.linhvo.ittakestwo.data.AuthRepository
 
 class SignInViewModel : ViewModel() {
-
     private val authRepository = AuthRepository()
 
     private val _email = MutableStateFlow("")
     val email = _email.asStateFlow()
-
-    private val _signInState = MutableStateFlow(false)
-    val signInState = _signInState.asStateFlow()
 
     private val _errorMessage = MutableStateFlow("")
     val errorMessage = _errorMessage.asStateFlow()
@@ -28,11 +24,9 @@ class SignInViewModel : ViewModel() {
     fun onSignInButtonClick(password: CharSequence) {
         val passwordStr = password.toString()
         viewModelScope.launch {
-            authRepository.signIn(email = email.value, password = passwordStr).onSuccess {
-                _signInState.value = true
-            }.onFailure {
-                _signInState.value = false
+            authRepository.signIn(email = email.value, password = passwordStr).onFailure {
                 _errorMessage.value = it.message ?: ""
+                Log.d("auth", _errorMessage.value)
             }
         }
     }

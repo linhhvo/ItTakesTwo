@@ -5,6 +5,9 @@ import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 import me.linhvo.ittakestwo.R
 
+val NAV_ROUTES: List<Route.BottomNavRoute> =
+    listOf(Route.Home, Route.Chat, Route.Settings)
+
 sealed interface Route : NavKey {
     sealed interface BottomNavRoute : Route {
         @get:DrawableRes
@@ -34,7 +37,6 @@ sealed interface Route : NavKey {
 
     @Serializable
     data object SignIn : Route
-
 
     @Serializable
     data object SignUp : Route
