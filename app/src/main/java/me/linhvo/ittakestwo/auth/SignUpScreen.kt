@@ -8,9 +8,9 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -26,8 +26,29 @@ import me.linhvo.ittakestwo.R
 
 @Composable
 fun SignUpScreen() {
-    Scaffold { innerPadding ->
+    val signUpViewModel: SignUpViewModel = viewModel()
+
+//    val scope = rememberCoroutineScope()
+    val snackBarHostState = remember { SnackbarHostState() }
+
+    val errorMessage by signUpViewModel.errorMessage.collectAsStateWithLifecycle()
+
+    errorMessage?.let {
+        LaunchedEffect(snackBarHostState, errorMessage) {
+            if (errorMessage != null) {
+                snackBarHostState.showSnackbar(errorMessage.toString())
+                signUpViewModel.resetErrorMessage()
+            }
+        }
+    }
+
+    Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackBarHostState)
+        }
+    ) { innerPadding ->
         SignUpContent(
+            signUpViewModel = signUpViewModel,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
@@ -37,15 +58,11 @@ fun SignUpScreen() {
 }
 
 @Composable
-fun SignUpContent(modifier: Modifier = Modifier) {
+fun SignUpContent(signUpViewModel: SignUpViewModel, modifier: Modifier = Modifier) {
     val passwordTextFieldState = remember { TextFieldState() }
 
-    val signUpViewModel: SignUpViewModel = viewModel()
     val displayName by signUpViewModel.displayName.collectAsStateWithLifecycle()
     val email by signUpViewModel.email.collectAsStateWithLifecycle()
-
-    val scope = rememberCoroutineScope()
-    val snackBarHostState = remember { SnackbarHostState() }
 
     Column(
         modifier = modifier

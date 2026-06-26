@@ -3,10 +3,17 @@ package me.linhvo.ittakestwo.auth
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.jan.supabase.auth.exception.AuthRestException
+import io.github.jan.supabase.exceptions.RestException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.SerializationException
 import me.linhvo.ittakestwo.data.AuthRepository
+
+sealed interface SignUpUiState {
+
+}
 
 class SignUpViewModel : ViewModel() {
     private val authRepository = AuthRepository()
@@ -16,7 +23,7 @@ class SignUpViewModel : ViewModel() {
     private val _email = MutableStateFlow("")
     val email = _email.asStateFlow()
 
-    private val _errorMessage = MutableStateFlow("")
+    private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage = _errorMessage.asStateFlow()
 
     fun onDisplayNameChange(displayName: String) {
@@ -31,10 +38,29 @@ class SignUpViewModel : ViewModel() {
         val passwordStr = password.toString()
         viewModelScope.launch {
             authRepository.signUp(name = displayName.value, email = email.value, password = passwordStr).onFailure {
-                _errorMessage.value = it.message ?: ""
-                Log.d("auth", _errorMessage.value)
+                _errorMessage.value = when (it) {
+                    is AuthRestException -> {
+                        it.errorDescription
+                    }
+
+                    is RestException -> {
+                        it.description
+                    }
+
+                    is SerializationException -> {
+                        "Display name is empty"
+                    }
+
+                    else -> {
+                        it.toString()
+                    }
+                }
             }
         }
+    }
+
+    fun resetErrorMessage() {
+        _errorMessage.value = null
     }
 
     init {

@@ -36,17 +36,23 @@ import me.linhvo.ittakestwo.settings.SettingsScreen
 @Composable
 fun AppNavigation() {
 
-    val startRoute = Route.Home
-    val backStack = rememberNavBackStack(startRoute)
+    val backStack = rememberNavBackStack(Route.Start)
 
     val navViewModel: NavViewModel = viewModel()
     val sessionStatus by navViewModel.sessionStatus.collectAsStateWithLifecycle()
 
     LaunchedEffect(sessionStatus) {
+        Log.d("auth_session", sessionStatus.toString())
         when (sessionStatus) {
             is SessionStatus.Authenticated -> {
-                backStack.clear()
-                backStack.add(Route.Home)
+                if (backStack.last() is Route.InitialRoute) {
+                    backStack.clear()
+                    backStack.add(Route.Home)
+                }
+            }
+
+            is SessionStatus.Initializing -> {
+                //TODO: add loading screen
             }
 
             else -> {
@@ -76,6 +82,9 @@ fun AppNavigation() {
                     }
                 },
                 entryProvider = entryProvider {
+                    entry<Route.Start> {
+                        //TODO: add app start screen
+                    }
                     entry<Route.Home> {
                         Log.d("backstack -- Home", backStack.toList().toString())
                         HomeScreen()

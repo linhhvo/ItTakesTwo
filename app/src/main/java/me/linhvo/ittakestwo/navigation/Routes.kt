@@ -17,6 +17,8 @@ sealed interface Route : NavKey {
         val iconUnselected: Int
     }
 
+    sealed interface InitialRoute : Route
+
     @Serializable
     data object Home : BottomNavRoute {
         override val iconSelected = R.drawable.home_selected
@@ -36,8 +38,11 @@ sealed interface Route : NavKey {
     }
 
     @Serializable
-    data object SignIn : Route
+    data object SignIn : InitialRoute
 
     @Serializable
-    data object SignUp : Route
+    data object SignUp : InitialRoute
+
+    @Serializable
+    data object Start : InitialRoute
 }

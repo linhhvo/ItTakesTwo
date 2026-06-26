@@ -9,6 +9,7 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -26,8 +27,29 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import me.linhvo.ittakestwo.R
 
 @Composable
-fun SignInScreen(onCreateAccountTextClick: () -> Unit) {
-    Scaffold { innerPadding ->
+fun SignInScreen(
+    onCreateAccountTextClick: () -> Unit
+) {
+    val signInViewModel: SignInViewModel = viewModel()
+
+    val snackBarHostState = remember { SnackbarHostState() }
+
+    val errorMessage by signInViewModel.errorMessage.collectAsStateWithLifecycle()
+
+    errorMessage?.let {
+        LaunchedEffect(snackBarHostState, errorMessage) {
+            if (errorMessage != null) {
+                snackBarHostState.showSnackbar(errorMessage.toString())
+                signInViewModel.resetErrorMessage()
+            }
+        }
+    }
+
+    Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackBarHostState)
+        }
+    ) { innerPadding ->
         SignInContent(
             onCreateAccountTextClick = onCreateAccountTextClick,
             modifier = Modifier
