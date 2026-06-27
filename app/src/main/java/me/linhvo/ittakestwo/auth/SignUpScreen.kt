@@ -26,19 +26,14 @@ import me.linhvo.ittakestwo.R
 
 @Composable
 fun SignUpScreen() {
-    val signUpViewModel: SignUpViewModel = viewModel()
-
-//    val scope = rememberCoroutineScope()
+    val viewModel: SignUpViewModel = viewModel()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackBarHostState = remember { SnackbarHostState() }
 
-    val errorMessage by signUpViewModel.errorMessage.collectAsStateWithLifecycle()
-
-    errorMessage?.let {
-        LaunchedEffect(snackBarHostState, errorMessage) {
-            if (errorMessage != null) {
-                snackBarHostState.showSnackbar(errorMessage.toString())
-                signUpViewModel.resetErrorMessage()
-            }
+    uiState.errorMessage?.let {
+        LaunchedEffect(snackBarHostState, uiState.errorMessage) {
+            snackBarHostState.showSnackbar(uiState.errorMessage.toString())
+            viewModel.resetErrorMessage()
         }
     }
 
@@ -48,7 +43,11 @@ fun SignUpScreen() {
         }
     ) { innerPadding ->
         SignUpContent(
-            signUpViewModel = signUpViewModel,
+            displayName = uiState.displayName,
+            email = uiState.email,
+            onDisplayNameChange = viewModel::onDisplayNameChange,
+            onEmailChange = viewModel::onEmailChange,
+            onSignUpButtonClick = viewModel::onSignUpButtonClick,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
@@ -58,11 +57,15 @@ fun SignUpScreen() {
 }
 
 @Composable
-fun SignUpContent(signUpViewModel: SignUpViewModel, modifier: Modifier = Modifier) {
+fun SignUpContent(
+    displayName: String,
+    email: String,
+    onDisplayNameChange: (String) -> Unit,
+    onEmailChange: (String) -> Unit,
+    onSignUpButtonClick: (CharSequence) -> Unit,
+    modifier: Modifier = Modifier
+) {
     val passwordTextFieldState = remember { TextFieldState() }
-
-    val displayName by signUpViewModel.displayName.collectAsStateWithLifecycle()
-    val email by signUpViewModel.email.collectAsStateWithLifecycle()
 
     Column(
         modifier = modifier
@@ -81,7 +84,7 @@ fun SignUpContent(signUpViewModel: SignUpViewModel, modifier: Modifier = Modifie
             OutlinedTextField(
                 value = displayName,
                 leadingIcon = { Icon(painter = painterResource(R.drawable.person), contentDescription = "mail icon") },
-                onValueChange = { signUpViewModel.onDisplayNameChange(it) },
+                onValueChange = { onDisplayNameChange(it) },
                 label = { Text(text = "Name") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions.Default.copy(
@@ -92,7 +95,7 @@ fun SignUpContent(signUpViewModel: SignUpViewModel, modifier: Modifier = Modifie
             OutlinedTextField(
                 value = email,
                 leadingIcon = { Icon(painter = painterResource(R.drawable.mail), contentDescription = "mail icon") },
-                onValueChange = { signUpViewModel.onEmailChange(it) },
+                onValueChange = { onEmailChange(it) },
                 label = { Text(text = "Email") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions.Default.copy(
@@ -115,7 +118,7 @@ fun SignUpContent(signUpViewModel: SignUpViewModel, modifier: Modifier = Modifie
             shape = RoundedCornerShape(5.dp),
             onClick = {
                 localSoftwareKeyboardController?.hide()
-                signUpViewModel.onSignUpButtonClick(passwordTextFieldState.text)
+                onSignUpButtonClick(passwordTextFieldState.text)
             }
         ) {
             Text(text = "Create an account", fontWeight = FontWeight.SemiBold)

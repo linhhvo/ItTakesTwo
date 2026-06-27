@@ -7,50 +7,63 @@ import io.github.jan.supabase.auth.exception.AuthRestException
 import io.github.jan.supabase.exceptions.RestException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerializationException
 import me.linhvo.ittakestwo.data.AuthRepository
 
+data class SignInUiState(
+    val email: String = "",
+    val errorMessage: String? = null
+)
+
 class SignInViewModel : ViewModel() {
     private val authRepository = AuthRepository()
 
-    private val _email = MutableStateFlow("")
-    val email = _email.asStateFlow()
-
-    private val _errorMessage = MutableStateFlow<String?>(null)
-    val errorMessage = _errorMessage.asStateFlow()
+    private val _uiState = MutableStateFlow(SignUpUiState())
+    val uiState = _uiState.asStateFlow()
 
     fun onEmailChange(email: String) {
-        _email.value = email
+        _uiState.update {
+            it.copy(email = email)
+        }
     }
 
     fun onSignInButtonClick(password: CharSequence) {
         val passwordStr = password.toString()
         viewModelScope.launch {
-            authRepository.signIn(email = email.value, password = passwordStr).onFailure {
-                _errorMessage.value = when (it) {
-                    is AuthRestException -> {
-                        it.errorDescription
-                    }
+            authRepository.signIn(
+                email = _uiState.value.email,
+                password = passwordStr
+            ).onFailure { e ->
+                _uiState.update { state ->
+                    state.copy(
+                        errorMessage = when (e) {
+                            is AuthRestException -> {
+                                e.errorDescription
+                            }
 
-                    is RestException -> {
-                        it.description
-                    }
+                            is RestException -> {
+                                e.description
+                            }
 
-                    is SerializationException -> {
-                        "Display name is empty"
-                    }
+                            is SerializationException -> {
+                                "Display name is empty"
+                            }
 
-                    else -> {
-                        it.toString()
-                    }
+                            else -> {
+                                e.message.toString()
+                            }
+                        }
+                    )
                 }
+
             }
         }
     }
 
     fun resetErrorMessage() {
-        _errorMessage.value = null
+        _uiState.update { it.copy(errorMessage = null) }
     }
 
     init {

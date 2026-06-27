@@ -30,18 +30,14 @@ import me.linhvo.ittakestwo.R
 fun SignInScreen(
     onCreateAccountTextClick: () -> Unit
 ) {
-    val signInViewModel: SignInViewModel = viewModel()
-
+    val viewModel: SignInViewModel = viewModel()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackBarHostState = remember { SnackbarHostState() }
 
-    val errorMessage by signInViewModel.errorMessage.collectAsStateWithLifecycle()
-
-    errorMessage?.let {
-        LaunchedEffect(snackBarHostState, errorMessage) {
-            if (errorMessage != null) {
-                snackBarHostState.showSnackbar(errorMessage.toString())
-                signInViewModel.resetErrorMessage()
-            }
+    uiState.errorMessage?.let {
+        LaunchedEffect(snackBarHostState, uiState.errorMessage) {
+            snackBarHostState.showSnackbar(uiState.errorMessage.toString())
+            viewModel.resetErrorMessage()
         }
     }
 
@@ -51,6 +47,9 @@ fun SignInScreen(
         }
     ) { innerPadding ->
         SignInContent(
+            email = uiState.email,
+            onEmailChange = viewModel::onEmailChange,
+            onSignInButtonClick = viewModel::onSignInButtonClick,
             onCreateAccountTextClick = onCreateAccountTextClick,
             modifier = Modifier
                 .fillMaxSize()
@@ -64,13 +63,13 @@ fun SignInScreen(
 
 @Composable
 fun SignInContent(
+    email: String,
+    onEmailChange: (String) -> Unit,
+    onSignInButtonClick: (CharSequence) -> Unit,
+    onCreateAccountTextClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onCreateAccountTextClick: () -> Unit
 ) {
     val passwordTextFieldState = remember { TextFieldState() }
-
-    val signInViewModel: SignInViewModel = viewModel()
-    val email by signInViewModel.email.collectAsStateWithLifecycle()
 
     Column(
         modifier = modifier
@@ -89,7 +88,7 @@ fun SignInContent(
             OutlinedTextField(
                 value = email,
                 leadingIcon = { Icon(painter = painterResource(R.drawable.mail), contentDescription = "mail icon") },
-                onValueChange = { signInViewModel.onEmailChange(it) },
+                onValueChange = { onEmailChange(it) },
                 label = { Text(text = "Email") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions.Default.copy(
@@ -112,7 +111,7 @@ fun SignInContent(
             shape = RoundedCornerShape(5.dp),
             onClick = {
                 localSoftwareKeyboardController?.hide()
-                signInViewModel.onSignInButtonClick(passwordTextFieldState.text)
+                onSignInButtonClick(passwordTextFieldState.text)
             }
         ) {
             Text(text = "Sign In", fontWeight = FontWeight.SemiBold)
