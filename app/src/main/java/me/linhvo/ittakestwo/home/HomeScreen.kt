@@ -8,6 +8,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -17,18 +18,28 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import me.linhvo.ittakestwo.R
 
 @Composable
 fun HomeScreen() {
-    HomeContent()
+    val homeViewModel: HomeViewModel = viewModel()
+    val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
+
+    HomeContent(
+        userInitial = uiState.userInitial,
+        partnerInitial = uiState.partnerInitial,
+        signOut = homeViewModel::signOut
+    )
 }
 
 @Composable
-fun HomeContent() {
-    val homeViewModel: HomeViewModel = viewModel()
-
+fun HomeContent(
+    userInitial: String,
+    partnerInitial: String,
+    signOut: () -> Unit
+) {
     val containerColorForeground1 = MaterialTheme.colorScheme.primary
     val containerColorForeground2 = MaterialTheme.colorScheme.primaryContainer
 
@@ -57,7 +68,7 @@ fun HomeContent() {
                     .background(MaterialTheme.colorScheme.background)
             ) {
                 Text(
-                    text = "H",
+                    text = partnerInitial,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -78,7 +89,7 @@ fun HomeContent() {
                     .background(MaterialTheme.colorScheme.background)
             ) {
                 Text(
-                    text = "L",
+                    text = userInitial,
                     color = MaterialTheme.colorScheme.onPrimary,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -90,6 +101,6 @@ fun HomeContent() {
             }
         }
 
-        Button(onClick = { homeViewModel.signOut() }) { Text(text = "Sign Out") }
+        Button(onClick = { signOut() }) { Text(text = "Sign Out") }
     }
 }

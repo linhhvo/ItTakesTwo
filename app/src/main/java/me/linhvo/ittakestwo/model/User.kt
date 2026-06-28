@@ -13,5 +13,8 @@ data class User(
     val displayName: String,
 
     @SerialName("avatar_url")
-    val avatarUrl: String? = null
+    val avatarUrl: String? = null,
+
+    @SerialName("partner_id")
+    val partnerId: String? = null
 )
