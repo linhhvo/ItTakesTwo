@@ -20,44 +20,32 @@ data class SignInUiState(
 class SignInViewModel : ViewModel() {
     private val authRepository = AuthRepository()
 
-    private val _uiState = MutableStateFlow(SignUpUiState())
+    private val _uiState = MutableStateFlow(SignInUiState())
     val uiState = _uiState.asStateFlow()
 
     fun onEmailChange(email: String) {
-        _uiState.update {
-            it.copy(email = email)
-        }
+        _uiState.update { it.copy(email = email) }
     }
 
     fun onSignInButtonClick(password: CharSequence) {
         val passwordStr = password.toString()
         viewModelScope.launch {
-            authRepository.signIn(
-                email = _uiState.value.email,
-                password = passwordStr
-            ).onFailure { e ->
+            try {
+                authRepository.signIn(
+                    email = _uiState.value.email,
+                    password = passwordStr
+                )
+            } catch (e: Exception) {
                 _uiState.update { state ->
                     state.copy(
                         errorMessage = when (e) {
-                            is AuthRestException -> {
-                                e.errorDescription
-                            }
-
-                            is RestException -> {
-                                e.description
-                            }
-
-                            is SerializationException -> {
-                                "Display name is empty"
-                            }
-
-                            else -> {
-                                e.message.toString()
-                            }
+                            is AuthRestException -> e.errorDescription
+                            is RestException -> e.description
+                            is SerializationException -> "Display name is empty"
+                            else -> e.message
                         }
                     )
                 }
-
             }
         }
     }

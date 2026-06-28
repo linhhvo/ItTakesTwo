@@ -34,33 +34,23 @@ class SignUpViewModel : ViewModel() {
     fun onSignUpButtonClick(password: CharSequence) {
         val passwordStr = password.toString()
         viewModelScope.launch {
-            authRepository.signUp(
-                name = _uiState.value.displayName,
-                email = _uiState.value.email,
-                password = passwordStr
-            ).onFailure { e ->
+            try {
+                authRepository.signUp(
+                    name = _uiState.value.displayName,
+                    email = _uiState.value.email,
+                    password = passwordStr
+                )
+            } catch (e: Exception) {
                 _uiState.update { state ->
                     state.copy(
                         errorMessage = when (e) {
-                            is AuthRestException -> {
-                                e.errorDescription
-                            }
-
-                            is RestException -> {
-                                e.description
-                            }
-
-                            is SerializationException -> {
-                                "Display name is empty"
-                            }
-
-                            else -> {
-                                e.message.toString()
-                            }
+                            is AuthRestException -> e.errorDescription
+                            is RestException -> e.description
+                            is SerializationException -> "Display name is empty"
+                            else -> e.message
                         }
                     )
                 }
-
             }
         }
     }

@@ -42,7 +42,7 @@ fun AppNavigation() {
     val sessionStatus by navViewModel.sessionStatus.collectAsStateWithLifecycle()
 
     LaunchedEffect(sessionStatus) {
-        Log.d("auth_session", sessionStatus.toString())
+//        Log.d("auth_session", sessionStatus.toString())
         when (sessionStatus) {
             is SessionStatus.Authenticated -> {
                 if (backStack.last() is Route.InitialRoute) {
