@@ -8,7 +8,6 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -23,37 +22,27 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import me.linhvo.ittakestwo.R
+import me.linhvo.ittakestwo.ui.components.Dialog
 
 @Composable
 fun SignUpScreen() {
     val viewModel: SignUpViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackBarHostState = remember { SnackbarHostState() }
 
-    uiState.errorMessage?.let {
-        LaunchedEffect(snackBarHostState, uiState.errorMessage) {
-            snackBarHostState.showSnackbar(uiState.errorMessage.toString())
-            viewModel.resetErrorMessage()
-        }
+    if (uiState.errorMessage != null) {
+        Dialog(errorMessage = uiState.errorMessage!!, onDismissRequest = viewModel::resetErrorMessage)
     }
 
-    Scaffold(
-        snackbarHost = {
-            SnackbarHost(hostState = snackBarHostState)
-        }
-    ) { innerPadding ->
-        SignUpContent(
-            displayName = uiState.displayName,
-            email = uiState.email,
-            onDisplayNameChange = viewModel::onDisplayNameChange,
-            onEmailChange = viewModel::onEmailChange,
-            onSignUpButtonClick = viewModel::onSignUpButtonClick,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .wrapContentSize(Alignment.Center)
-        )
-    }
+    SignUpContent(
+        displayName = uiState.displayName,
+        email = uiState.email,
+        onDisplayNameChange = viewModel::onDisplayNameChange,
+        onEmailChange = viewModel::onEmailChange,
+        onSignUpButtonClick = viewModel::onSignUpButtonClick,
+        modifier = Modifier
+            .fillMaxSize()
+            .wrapContentSize(Alignment.Center)
+    )
 }
 
 @Composable
@@ -109,15 +98,19 @@ fun SignUpContent(
                 label = { Text(text = "Password") },
                 leadingIcon = {
                     Icon(painter = painterResource(R.drawable.lock), contentDescription = "lock icon")
-                }
+                },
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    imeAction = ImeAction.Done
+                ),
+                onKeyboardAction = { onSignUpButtonClick(passwordTextFieldState.text) }
             )
         }
 
-        val localSoftwareKeyboardController = LocalSoftwareKeyboardController.current
+        val keyboardController = LocalSoftwareKeyboardController.current
         Button(
             shape = RoundedCornerShape(5.dp),
             onClick = {
-                localSoftwareKeyboardController?.hide()
+                keyboardController?.hide()
                 onSignUpButtonClick(passwordTextFieldState.text)
             }
         ) {

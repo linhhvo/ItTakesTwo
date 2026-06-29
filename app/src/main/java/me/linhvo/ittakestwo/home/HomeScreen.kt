@@ -1,5 +1,6 @@
 package me.linhvo.ittakestwo.home
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -21,16 +22,21 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import me.linhvo.ittakestwo.R
+import me.linhvo.ittakestwo.ui.components.Dialog
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun HomeScreen() {
-    val homeViewModel: HomeViewModel = viewModel()
-    val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
+    val viewModel: HomeViewModel = viewModel()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    if (uiState.errorMessage != null) {
+        Dialog(errorMessage = uiState.errorMessage!!, onDismissRequest = viewModel::resetErrorMessage)
+    }
     HomeContent(
         userInitial = uiState.userInitial,
         partnerInitial = uiState.partnerInitial,
-        signOut = homeViewModel::signOut
+        signOut = viewModel::signOut,
     )
 }
 

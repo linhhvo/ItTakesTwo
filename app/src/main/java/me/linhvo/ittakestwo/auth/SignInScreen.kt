@@ -9,7 +9,6 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -25,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import me.linhvo.ittakestwo.R
+import me.linhvo.ittakestwo.ui.components.Dialog
 
 @Composable
 fun SignInScreen(
@@ -32,33 +32,22 @@ fun SignInScreen(
 ) {
     val viewModel: SignInViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackBarHostState = remember { SnackbarHostState() }
 
-    uiState.errorMessage?.let {
-        LaunchedEffect(snackBarHostState, uiState.errorMessage) {
-            snackBarHostState.showSnackbar(uiState.errorMessage.toString())
-            viewModel.resetErrorMessage()
-        }
+    if (uiState.errorMessage != null) {
+        Dialog(errorMessage = uiState.errorMessage!!, onDismissRequest = viewModel::resetErrorMessage)
     }
 
-    Scaffold(
-        snackbarHost = {
-            SnackbarHost(hostState = snackBarHostState)
-        }
-    ) { innerPadding ->
-        SignInContent(
-            email = uiState.email,
-            onEmailChange = viewModel::onEmailChange,
-            onSignInButtonClick = viewModel::onSignInButtonClick,
-            onCreateAccountTextClick = onCreateAccountTextClick,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .wrapContentSize(
-                    Alignment.Center
-                )
-        )
-    }
+    SignInContent(
+        email = uiState.email,
+        onEmailChange = viewModel::onEmailChange,
+        onSignInButtonClick = viewModel::onSignInButtonClick,
+        onCreateAccountTextClick = onCreateAccountTextClick,
+        modifier = Modifier
+            .fillMaxSize()
+            .wrapContentSize(
+                Alignment.Center
+            )
+    )
 }
 
 @Composable
@@ -102,15 +91,19 @@ fun SignInContent(
                 label = { Text(text = "Password") },
                 leadingIcon = {
                     Icon(painter = painterResource(R.drawable.lock), contentDescription = "lock icon")
-                }
+                },
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    imeAction = ImeAction.Done
+                ),
+                onKeyboardAction = { onSignInButtonClick(passwordTextFieldState.text) }
             )
         }
 
-        val localSoftwareKeyboardController = LocalSoftwareKeyboardController.current
+        val keyboardController = LocalSoftwareKeyboardController.current
         Button(
             shape = RoundedCornerShape(5.dp),
             onClick = {
-                localSoftwareKeyboardController?.hide()
+                keyboardController?.hide()
                 onSignInButtonClick(passwordTextFieldState.text)
             }
         ) {

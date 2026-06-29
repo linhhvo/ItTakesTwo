@@ -15,40 +15,30 @@ data class HomeUiState(
     val userInitial: String = "",
 //    val userAvatar: Int
     val partnerInitial: String = "",
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
 )
 
 class HomeViewModel : ViewModel() {
     private val authRepository = AuthRepository()
-    private val userRepository = UserRepository(viewModelScope)
+    private val userRepository = UserRepository()
 
-    private val _errorMessage = MutableStateFlow("")
-    private val _userInfo =
-        userRepository.getUserInfo()
-            .catch {
-                _errorMessage.value = "Failed to retrieve user data from network"
-                Log.d("supabase_data", _errorMessage.value)
-            }
-
-    private val _partnerInfo =
-        userRepository.getPartnerInfo()
-            .catch {
-                _errorMessage.value = "Failed to retrieve partner data from network"
-                Log.d("supabase_data", _errorMessage.value)
-            }
+    private val _errorMessage: MutableStateFlow<String?> = MutableStateFlow(null)
 
     val uiState: StateFlow<HomeUiState> =
-        combine(_userInfo, _partnerInfo, _errorMessage) { userInfo, partnerInfo, errorMessage ->
-            HomeUiState(
-                userInitial = userInfo?.displayName?.first().toString().uppercase(),
-                partnerInitial = partnerInfo?.displayName?.first().toString().uppercase(),
-                errorMessage = errorMessage
+        userRepository.getUserAndPartnerInfo()
+            .combine(_errorMessage) { (user, partner), errorMessage ->
+                HomeUiState(
+                    userInitial = user?.displayName?.first()?.toString()?.uppercase() ?: "",
+                    partnerInitial = partner?.displayName?.first()?.toString()?.uppercase() ?: "",
+                    errorMessage = errorMessage
+                )
+            }.catch {
+                emit(HomeUiState(errorMessage = it.message))
+            }.stateIn(
+                scope = viewModelScope,
+                started = WhileSubscribed(5000),
+                initialValue = HomeUiState()
             )
-        }.stateIn(
-            scope = viewModelScope,
-            started = WhileSubscribed(5000),
-            initialValue = HomeUiState()
-        )
 
     fun signOut() {
         viewModelScope.launch {
@@ -60,9 +50,12 @@ class HomeViewModel : ViewModel() {
                     is RestException -> e.description
                     else -> e.message
                 }.toString()
-
             }
         }
+    }
+
+    fun resetErrorMessage() {
+        _errorMessage.value = null
     }
 
     init {
