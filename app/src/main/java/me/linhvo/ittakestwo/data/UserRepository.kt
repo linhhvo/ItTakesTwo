@@ -1,18 +1,42 @@
 package me.linhvo.ittakestwo.data
 
+import android.util.Log
 import io.github.jan.supabase.annotations.SupabaseExperimental
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.filter.FilterOperation
+import io.github.jan.supabase.postgrest.query.filter.FilterOperator
+import io.github.jan.supabase.realtime.selectAsFlow
 import io.github.jan.supabase.realtime.selectSingleValueAsFlow
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.*
+import me.linhvo.ittakestwo.model.Pairing
 import me.linhvo.ittakestwo.model.User
 
-class UserRepository {
+class UserRepository(val uiScope: CoroutineScope) {
     private val userId = supabase.auth.currentSessionOrNull()?.user?.id ?: ""
+
+//    @OptIn(SupabaseExperimental::class)
+//    fun getUserInfo(): Flow<User?> {
+//        val channel = supabase.channel("user:$userId")
+//        return channelFlow {
+//            val changeFlow = channel.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
+//                table = "users"
+//                filter("id", FilterOperator.EQ, userId)
+//            }
+//
+//            changeFlow.onEach {
+//                Log.d("supabase", it.toString())
+//                send(Json.decodeFromJsonElement<User>(it.record))
+//            }.launchIn(this)
+//
+//            channel.subscribe()
+//        }
+//            .onCompletion {
+//                channel.unsubscribe()
+//            }
+//    }
 
     @OptIn(SupabaseExperimental::class)
     fun getUserInfo(): Flow<User?> =
@@ -26,14 +50,62 @@ class UserRepository {
             eq("id", partnerId)
         }
 
+    suspend fun getPairing(userId: String): Pairing? =
+        supabase.from("pairings").select {
+            filter {
+                or {
+                    eq("user_id", userId)
+                    eq("partner_id", userId)
+                }
+            }
+        }.decodeSingleOrNull<Pairing>()
+
+    @OptIn(SupabaseExperimental::class)
+    fun getPairingByUserId(userId: String) =
+        supabase.from("pairings")
+            .selectAsFlow(Pairing::id, filter = FilterOperation("user_id", FilterOperator.EQ, userId))
+
+    @OptIn(SupabaseExperimental::class)
+    fun getPairingByPartnerId(userId: String) =
+        supabase.from("pairings")
+            .selectAsFlow(Pairing::id, filter = FilterOperation("partner_id", FilterOperator.EQ, userId))
+
+    @OptIn(SupabaseExperimental::class)
+    fun getPairingFlow(userId: String): Flow<List<Pairing>> =
+        combine(getPairingByUserId(userId), getPairingByPartnerId(userId)) { pairings, pairings1 ->
+//            pairings.ifEmpty { pairings1 }.firstOrNull()
+            pairings + pairings1
+        }
+
+//    @OptIn(SupabaseExperimental::class)
+//    fun getPairingFlow(userId: String): Flow<Pairing?> =
+//        flow {
+//            val pairing = getPairing(userId)
+//            if (pairing != null) {
+//                emitAll(supabase.from("pairings").selectSingleValueAsFlow(Pairing::id) {
+//                    or {
+//                        eq("user_id", userId)
+//                        eq("partner_id", userId)
+//                    }
+//                })
+//            } else {
+//                emit(null)
+//            }
+//        }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getUserAndPartnerInfo(): Flow<Pair<User?, User?>> =
         getUserInfo().flatMapLatest { user ->
-            if (user?.partnerId != null) {
-                getPartnerInfo(user.partnerId).map { partner -> Pair(user, partner) }
-            } else {
-                flowOf(Pair(user, null))
+            getPairingFlow(userId).flatMapLatest { pairings ->
+                Log.d("supabase", pairings.toString())
+                val partnerId = pairings.first().getPartnerId(userId)
+                if (partnerId != null) {
+                    getPartnerInfo(partnerId).map { partner ->
+                        Pair(user, partner)
+                    }
+                } else {
+                    flowOf(Pair(user, null))
+                }
             }
         }
 
@@ -41,12 +113,30 @@ class UserRepository {
     suspend fun addPartner(partnerEmail: String) {
         val partnerId = supabase.from("users").select {
             filter { eq("email", partnerEmail) }
-        }.decodeSingleOrNull<User>()?.partnerId
+        }.decodeSingleOrNull<User>()?.id
 
-        supabase.from("users").update({
-            User::partnerId setTo partnerId
-        }) {
-            filter { eq("id", userId) }
+        if (partnerId == null) {
+            throw Exception("No account exists for this email.")
+        }
+        val pairing = getPairing(userId)
+
+        if (pairing == null) {
+            supabase.from("pairings").insert(Pairing(userId = userId, partnerId = partnerId))
+            return
+        }
+
+        if (userId == pairing.userId) {
+            supabase.from("pairings").update({
+                set("partner_id", partnerId)
+            }) {
+                filter { eq("id", pairing.id!!) }
+            }
+        } else if (userId == pairing.partnerId) {
+            supabase.from("pairings").update({
+                set("user_id", partnerId)
+            }) {
+                filter { eq("id", pairing.id!!) }
+            }
         }
     }
 

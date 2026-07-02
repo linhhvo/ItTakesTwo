@@ -14,7 +14,20 @@ data class User(
 
     @SerialName("avatar_url")
     val avatarUrl: String? = null,
+)
+
+@Serializable
+data class Pairing(
+    val id: String? = null,
+
+    @SerialName("user_id")
+    val userId: String,
 
     @SerialName("partner_id")
-    val partnerId: String? = null
-)
+    val partnerId: String?
+) {
+    fun getPartnerId(currentUser: String): String? =
+        if (currentUser == userId) partnerId
+        else userId
+
+}
