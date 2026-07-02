@@ -14,7 +14,9 @@ data class User(
 
     @SerialName("avatar_url")
     val avatarUrl: String? = null,
-)
+) {
+    fun getInitial(): String = displayName.first().toString().uppercase()
+}
 
 @Serializable
 data class Pairing(

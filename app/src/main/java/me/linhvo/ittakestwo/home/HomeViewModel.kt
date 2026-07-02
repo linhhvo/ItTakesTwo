@@ -10,35 +10,44 @@ import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
 import kotlinx.coroutines.launch
 import me.linhvo.ittakestwo.data.AuthRepository
 import me.linhvo.ittakestwo.data.UserRepository
+import me.linhvo.ittakestwo.model.User
 
 data class HomeUiState(
-    val userInitial: String = "",
+//    val userInitial: String = "",
 //    val userAvatar: Int
-    val partnerInitial: String = "",
+//    val partnerInitial: String = "",
+    val user: User? = null,
+    val partner: User? = null,
     val errorMessage: String? = null,
+    val shouldShowProfile: Boolean = false
 )
 
 class HomeViewModel : ViewModel() {
     private val authRepository = AuthRepository()
-    private val userRepository = UserRepository()
+    private val userRepository = UserRepository(viewModelScope)
 
     private val _errorMessage: MutableStateFlow<String?> = MutableStateFlow(null)
+    private val _shouldShowProfile = MutableStateFlow(false)
 
     val uiState: StateFlow<HomeUiState> =
-        userRepository.getUserAndPartnerInfo()
-            .combine(_errorMessage) { (user, partner), errorMessage ->
-                HomeUiState(
-                    userInitial = user?.displayName?.first()?.toString()?.uppercase() ?: "",
-                    partnerInitial = partner?.displayName?.first()?.toString()?.uppercase() ?: "",
-                    errorMessage = errorMessage
-                )
-            }.catch {
-                emit(HomeUiState(errorMessage = it.message))
-            }.stateIn(
-                scope = viewModelScope,
-                started = WhileSubscribed(5000),
-                initialValue = HomeUiState()
+        combine(userRepository.getUserAndPartnerInfo(), _errorMessage, _shouldShowProfile)
+        { (user, partner), errorMessage, shouldShowProfile ->
+            HomeUiState(
+//                    userInitial = user?.displayName?.first()?.toString()?.uppercase() ?: "",
+//                    partnerInitial = partner?.displayName?.first()?.toString()?.uppercase() ?: "",
+                user = user,
+                partner = partner,
+                errorMessage = errorMessage,
+                shouldShowProfile = shouldShowProfile
             )
+        }.catch {
+            Log.d("debugging", it.message.toString())
+            emit(HomeUiState(errorMessage = it.message))
+        }.stateIn(
+            scope = viewModelScope,
+            started = WhileSubscribed(5000),
+            initialValue = HomeUiState()
+        )
 
     fun signOut() {
         viewModelScope.launch {
@@ -54,16 +63,25 @@ class HomeViewModel : ViewModel() {
         }
     }
 
+    fun addPartner(partnerEmail: String) {
+        viewModelScope.launch {
+            try {
+                userRepository.addPartner(partnerEmail)
+            } catch (e: Exception) {
+                _errorMessage.value = e.message
+            }
+        }
+    }
+
     fun resetErrorMessage() {
         _errorMessage.value = null
     }
 
-    init {
-        Log.d("view_model", "home view model started")
+    fun openProfile() {
+        _shouldShowProfile.value = true
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        Log.d("view_model", "home view model cleared")
+    fun closeProfile() {
+        _shouldShowProfile.value = false
     }
 }

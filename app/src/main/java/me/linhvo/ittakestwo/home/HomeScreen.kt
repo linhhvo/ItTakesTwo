@@ -3,6 +3,7 @@ package me.linhvo.ittakestwo.home
 import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
@@ -22,6 +23,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import me.linhvo.ittakestwo.R
+import me.linhvo.ittakestwo.model.User
+import me.linhvo.ittakestwo.profile.AddPartnerDialog
 import me.linhvo.ittakestwo.ui.components.Dialog
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -33,19 +36,31 @@ fun HomeScreen() {
     if (uiState.errorMessage != null) {
         Dialog(errorMessage = uiState.errorMessage!!, onDismissRequest = viewModel::resetErrorMessage)
     }
+
+    if (uiState.shouldShowProfile) {
+        if (uiState.partner == null) {
+            AddPartnerDialog(onEmailSubmit = viewModel::addPartner, onDismissRequest = viewModel::closeProfile)
+        } else {
+            //TODO: Add profile card
+        }
+    }
     HomeContent(
-        userInitial = uiState.userInitial,
-        partnerInitial = uiState.partnerInitial,
+        user = uiState.user,
+        partner = uiState.partner,
         signOut = viewModel::signOut,
+        onProfileClick = viewModel::openProfile
     )
 }
 
 @Composable
 fun HomeContent(
-    userInitial: String,
-    partnerInitial: String,
-    signOut: () -> Unit
+    user: User?,
+    partner: User?,
+    signOut: () -> Unit,
+    onProfileClick: () -> Unit
+
 ) {
+
     val containerColorForeground1 = MaterialTheme.colorScheme.primary
     val containerColorForeground2 = MaterialTheme.colorScheme.primaryContainer
 
@@ -64,7 +79,11 @@ fun HomeContent(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box {
+        Box(
+            modifier = Modifier
+                .width(100.dp)
+                .clickable(enabled = true, onClick = { onProfileClick() })
+        ) {
             // partner's profile picture
             Box(
                 modifier = Modifier
@@ -74,7 +93,7 @@ fun HomeContent(
                     .background(MaterialTheme.colorScheme.background)
             ) {
                 Text(
-                    text = partnerInitial,
+                    text = partner?.getInitial() ?: "",
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -95,7 +114,7 @@ fun HomeContent(
                     .background(MaterialTheme.colorScheme.background)
             ) {
                 Text(
-                    text = userInitial,
+                    text = user?.getInitial() ?: "",
                     color = MaterialTheme.colorScheme.onPrimary,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,

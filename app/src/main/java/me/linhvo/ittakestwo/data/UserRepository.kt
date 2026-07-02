@@ -9,8 +9,10 @@ import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.realtime.selectAsFlow
 import io.github.jan.supabase.realtime.selectSingleValueAsFlow
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.withContext
 import me.linhvo.ittakestwo.model.Pairing
 import me.linhvo.ittakestwo.model.User
 
@@ -73,25 +75,9 @@ class UserRepository(val uiScope: CoroutineScope) {
     @OptIn(SupabaseExperimental::class)
     fun getPairingFlow(userId: String): Flow<List<Pairing>> =
         combine(getPairingByUserId(userId), getPairingByPartnerId(userId)) { pairings, pairings1 ->
-//            pairings.ifEmpty { pairings1 }.firstOrNull()
             pairings + pairings1
         }
 
-//    @OptIn(SupabaseExperimental::class)
-//    fun getPairingFlow(userId: String): Flow<Pairing?> =
-//        flow {
-//            val pairing = getPairing(userId)
-//            if (pairing != null) {
-//                emitAll(supabase.from("pairings").selectSingleValueAsFlow(Pairing::id) {
-//                    or {
-//                        eq("user_id", userId)
-//                        eq("partner_id", userId)
-//                    }
-//                })
-//            } else {
-//                emit(null)
-//            }
-//        }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getUserAndPartnerInfo(): Flow<Pair<User?, User?>> =
@@ -110,34 +96,25 @@ class UserRepository(val uiScope: CoroutineScope) {
         }
 
 
-    suspend fun addPartner(partnerEmail: String) {
+    suspend fun addPartner(partnerEmail: String) = withContext(Dispatchers.IO) {
         val partnerId = supabase.from("users").select {
             filter { eq("email", partnerEmail) }
         }.decodeSingleOrNull<User>()?.id
-
         if (partnerId == null) {
             throw Exception("No account exists for this email.")
         }
-        val pairing = getPairing(userId)
 
+        val pairing = getPairing(userId)
         if (pairing == null) {
             supabase.from("pairings").insert(Pairing(userId = userId, partnerId = partnerId))
-            return
-        }
-
-        if (userId == pairing.userId) {
-            supabase.from("pairings").update({
-                set("partner_id", partnerId)
-            }) {
-                filter { eq("id", pairing.id!!) }
-            }
-        } else if (userId == pairing.partnerId) {
-            supabase.from("pairings").update({
-                set("user_id", partnerId)
-            }) {
-                filter { eq("id", pairing.id!!) }
+        } else {
+            if (userId == pairing.userId) {
+                supabase.from("pairings").update({
+                    set("partner_id", partnerId)
+                }) {
+                    filter { eq("id", pairing.id!!) }
+                }
             }
         }
     }
-
 }
