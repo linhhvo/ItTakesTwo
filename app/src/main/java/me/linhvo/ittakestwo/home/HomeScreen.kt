@@ -25,6 +25,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import me.linhvo.ittakestwo.R
 import me.linhvo.ittakestwo.model.User
 import me.linhvo.ittakestwo.profile.AddPartnerDialog
+import me.linhvo.ittakestwo.profile.ProfileDialog
 import me.linhvo.ittakestwo.ui.components.Dialog
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -41,7 +42,7 @@ fun HomeScreen() {
         if (uiState.partner == null) {
             AddPartnerDialog(onEmailSubmit = viewModel::addPartner, onDismissRequest = viewModel::closeProfile)
         } else {
-            //TODO: Add profile card
+            ProfileDialog(onDismissRequest = viewModel::closeProfile, user = uiState.user, partner = uiState.partner)
         }
     }
     HomeContent(
@@ -84,45 +85,48 @@ fun HomeContent(
                 .width(100.dp)
                 .clickable(enabled = true, onClick = { onProfileClick() })
         ) {
-            // partner's profile picture
-            Box(
-                modifier = Modifier
-                    .offset(x = 40.dp)
-                    .size(54.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.background)
-            ) {
-                Text(
-                    text = partner?.getInitial() ?: "",
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
+            if (partner?.avatarUrl == null) {
+                Box(
                     modifier = Modifier
-                        .align(Alignment.Center)
-                        .drawBehind {
-                            drawCircle(color = containerColorForeground2, radius = 25.dp.toPx())
-                        }
-
-                )
+                        .offset(x = 40.dp)
+                        .size(54.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.background)
+                ) {
+                    Text(
+                        text = partner?.getInitial() ?: "",
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .drawBehind {
+                                drawCircle(color = containerColorForeground2, radius = 25.dp.toPx())
+                            }
+                    )
+                }
             }
 
             // user's profile picture
-            Box(
-                modifier = Modifier
-                    .size(54.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.background)
-            ) {
-                Text(
-                    text = user?.getInitial() ?: "",
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
+            if (user?.avatarUrl == null) {
+                Box(
                     modifier = Modifier
-                        .align(Alignment.Center)
-                        .drawBehind {
-                            drawCircle(color = containerColorForeground1, radius = 25.dp.toPx())
-                        })
+                        .size(54.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.background)
+                ) {
+                    Text(
+                        text = user?.getInitial() ?: "",
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .drawBehind {
+                                drawCircle(color = containerColorForeground1, radius = 25.dp.toPx())
+                            }
+                    )
+                }
             }
         }
 
