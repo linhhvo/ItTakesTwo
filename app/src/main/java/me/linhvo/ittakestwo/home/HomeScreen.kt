@@ -42,7 +42,12 @@ fun HomeScreen() {
         if (uiState.partner == null) {
             AddPartnerDialog(onEmailSubmit = viewModel::addPartner, onDismissRequest = viewModel::closeProfile)
         } else {
-            ProfileDialog(onDismissRequest = viewModel::closeProfile, user = uiState.user, partner = uiState.partner)
+            ProfileDialog(
+                onDismissRequest = viewModel::closeProfile,
+                user = uiState.user,
+                partner = uiState.partner,
+                uploadAvatar = viewModel::uploadAvatar
+            )
         }
     }
     HomeContent(

@@ -1,5 +1,7 @@
 package me.linhvo.ittakestwo.home
 
+import android.content.Context
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -13,9 +15,7 @@ import me.linhvo.ittakestwo.data.UserRepository
 import me.linhvo.ittakestwo.model.User
 
 data class HomeUiState(
-//    val userInitial: String = "",
-//    val userAvatar: Int
-//    val partnerInitial: String = "",
+    val userAvatar: String? = null,
     val user: User? = null,
     val partner: User? = null,
     val errorMessage: String? = null,
@@ -24,24 +24,27 @@ data class HomeUiState(
 
 class HomeViewModel : ViewModel() {
     private val authRepository = AuthRepository()
-    private val userRepository = UserRepository(viewModelScope)
+    private val userRepository = UserRepository()
 
     private val _errorMessage: MutableStateFlow<String?> = MutableStateFlow(null)
     private val _shouldShowProfile = MutableStateFlow(false)
 
     val uiState: StateFlow<HomeUiState> =
-        combine(userRepository.getUserAndPartnerInfo(), _errorMessage, _shouldShowProfile)
+        combine(
+            userRepository.getProfileStream(),
+//            userRepository.getAvatarStream(),
+            _errorMessage,
+            _shouldShowProfile
+        )
         { (user, partner), errorMessage, shouldShowProfile ->
             HomeUiState(
-//                    userInitial = user?.displayName?.first()?.toString()?.uppercase() ?: "",
-//                    partnerInitial = partner?.displayName?.first()?.toString()?.uppercase() ?: "",
+//                userAvatar = avatar?.content.toString(),
                 user = user,
                 partner = partner,
                 errorMessage = errorMessage,
                 shouldShowProfile = shouldShowProfile
             )
         }.catch {
-            Log.d("debugging", it.message.toString())
             emit(HomeUiState(errorMessage = it.message))
         }.stateIn(
             scope = viewModelScope,
@@ -73,6 +76,30 @@ class HomeViewModel : ViewModel() {
         }
     }
 
+    fun uploadAvatar(context: Context, avatarUri: Uri) {
+        viewModelScope.launch {
+            try {
+                userRepository.uploadUserAvatar(context, avatarUri)
+            } catch (e: Exception) {
+                if (e !is IllegalStateException) {
+                    _errorMessage.value = e.message
+                } else {
+                    Log.d("debug_uploadAvatar", e.message.toString())
+                }
+            }
+        }
+    }
+
+    fun getAvatar(userId: String) {
+        viewModelScope.launch {
+            try {
+                userRepository.getUserAvatarUrl(userId)
+            } catch (e: Exception) {
+                _errorMessage.value = e.message
+            }
+        }
+    }
+
     fun resetErrorMessage() {
         _errorMessage.value = null
     }
@@ -84,4 +111,5 @@ class HomeViewModel : ViewModel() {
     fun closeProfile() {
         _shouldShowProfile.value = false
     }
+
 }

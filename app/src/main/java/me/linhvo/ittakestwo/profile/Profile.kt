@@ -1,6 +1,12 @@
 package me.linhvo.ittakestwo.profile
 
 import android.annotation.SuppressLint
+import android.content.Context
+import android.net.Uri
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -36,12 +43,25 @@ data class Event(
 fun ProfileDialog(
     onDismissRequest: () -> Unit,
     user: User?,
-    partner: User?
+    partner: User?,
+    uploadAvatar: (Context, Uri) -> Unit,
+//    getAvatar: (String) -> Unit
 ) {
 //    val eventList = listOf(Event(1, "wedding", "10-12-2020"))
     val eventList = emptyList<Event>()
 
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val context = LocalContext.current
+
+    val pickMedia = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) {
+            Log.d("debug", uri.toString())
+            uploadAvatar(context, uri)
+
+        } else {
+            Log.d("debug", "no media selected")
+        }
+    }
 
     Dialog(
         onDismissRequest = { onDismissRequest() },
@@ -66,7 +86,8 @@ fun ProfileDialog(
                     containerWidth = profileWidth,
                     user = user,
                     containerColor = MaterialTheme.colorScheme.primary,
-                    textColor = MaterialTheme.colorScheme.onPrimary
+                    textColor = MaterialTheme.colorScheme.onPrimary,
+                    onAvatarClick = { pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) }
                 )
                 Icon(
                     painter = painterResource(R.drawable.middle_icon),
@@ -78,7 +99,8 @@ fun ProfileDialog(
                     containerWidth = profileWidth,
                     user = partner,
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    textColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    textColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    onAvatarClick = { pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) }
                 )
             }
 
@@ -107,7 +129,8 @@ fun ProfileCard(
     containerWidth: Dp,
     user: User?,
     containerColor: Color,
-    textColor: Color
+    textColor: Color,
+    onAvatarClick: () -> Unit
 ) {
     Column(
         verticalArrangement = Arrangement.Center,
@@ -126,7 +149,7 @@ fun ProfileCard(
                     .size(60.dp)
                     .clip(RoundedCornerShape(10.dp))
                     .background(containerColor)
-                    .clickable(enabled = true, onClick = {})
+                    .clickable(enabled = true, onClick = { onAvatarClick() })
             ) {
                 Text(
                     text = user?.getInitial() ?: "",
@@ -137,16 +160,18 @@ fun ProfileCard(
                         .align(Alignment.Center)
                 )
             }
-        }
-//        Image(
-//            painter = painterResource(R.drawable.home_image),
-//            contentDescription = "user avatar",
-//            contentScale = Crop,
-//            modifier = Modifier
-//                .size(60.dp)
-//                .clip(RoundedCornerShape(8.dp))
+        } else {
+//            AsyncImage(model = user.getA)
+//            Image(
+//                painter = painterResource(R.drawable.home_image),
+//                contentDescription = "user avatar",
+//                contentScale = Crop,
+//                modifier = Modifier
+//                    .size(60.dp)
+//                    .clip(RoundedCornerShape(8.dp))
 //                .align(Alignment.TopEnd)
-//        )
+//            )
+        }
 
         Text(text = user?.displayName ?: "", fontSize = 18.sp, modifier = Modifier.padding(top = 10.dp))
     }

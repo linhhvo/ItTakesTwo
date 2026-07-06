@@ -83,8 +83,9 @@ dependencies {
     implementation(platform(libs.bom))
     implementation(libs.postgrest.kt)
     implementation(libs.realtime.kt)
-//    implementation(libs.ktor.client.android)
+    implementation(libs.storage.kt)
     implementation(libs.ktor.client.okhttp)
+    implementation(libs.coil.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

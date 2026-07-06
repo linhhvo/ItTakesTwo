@@ -1,7 +1,10 @@
 package me.linhvo.ittakestwo.model
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonIgnoreUnknownKeys
+import kotlinx.serialization.json.JsonObject
 
 @Serializable
 data class User(
@@ -18,7 +21,9 @@ data class User(
     fun getInitial(): String = displayName.first().toString().uppercase()
 }
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
+@JsonIgnoreUnknownKeys
 data class Pairing(
     val id: String? = null,
 
@@ -30,6 +35,26 @@ data class Pairing(
 ) {
     fun getPartnerId(currentUser: String): String? =
         if (currentUser == userId) partnerId
-        else userId
+        else if (partnerId != null) userId
+        else null
 
 }
+
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+@JsonIgnoreUnknownKeys
+data class Avatar(
+    val name: String,
+    val owner: String,
+    @SerialName("updated_at")
+    val updatedAt: String
+)
+
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+@JsonIgnoreUnknownKeys
+data class BroadcastResponse(
+    val operation: String,
+    val table: String,
+    val record: JsonObject
+)

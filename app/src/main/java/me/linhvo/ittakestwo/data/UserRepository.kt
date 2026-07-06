@@ -1,100 +1,109 @@
 package me.linhvo.ittakestwo.data
 
+import android.content.Context
+import android.net.Uri
 import android.util.Log
 import io.github.jan.supabase.annotations.SupabaseExperimental
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.query.filter.FilterOperation
-import io.github.jan.supabase.postgrest.query.filter.FilterOperator
-import io.github.jan.supabase.realtime.selectAsFlow
-import io.github.jan.supabase.realtime.selectSingleValueAsFlow
-import kotlinx.coroutines.CoroutineScope
+import io.github.jan.supabase.realtime.PostgresAction
+import io.github.jan.supabase.realtime.broadcastFlow
+import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.postgresChangeFlow
+import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
+import me.linhvo.ittakestwo.model.Avatar
+import me.linhvo.ittakestwo.model.BroadcastResponse
 import me.linhvo.ittakestwo.model.Pairing
 import me.linhvo.ittakestwo.model.User
+import kotlin.time.Duration.Companion.hours
 
-class UserRepository(val uiScope: CoroutineScope) {
-    private val userId = supabase.auth.currentSessionOrNull()?.user?.id ?: ""
+enum class Role(val text: String) {
+    USER("user"),
+    PARTNER("partner")
+}
 
-//    @OptIn(SupabaseExperimental::class)
-//    fun getUserInfo(): Flow<User?> {
-//        val channel = supabase.channel("user:$userId")
-//        return channelFlow {
-//            val changeFlow = channel.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
-//                table = "users"
-//                filter("id", FilterOperator.EQ, userId)
-//            }
-//
-//            changeFlow.onEach {
-//                Log.d("supabase", it.toString())
-//                send(Json.decodeFromJsonElement<User>(it.record))
-//            }.launchIn(this)
-//
-//            channel.subscribe()
-//        }
-//            .onCompletion {
-//                channel.unsubscribe()
-//            }
-//    }
+class UserRepository {
+    private val currentUserId = supabase.auth.currentSessionOrNull()?.user?.id ?: ""
 
     @OptIn(SupabaseExperimental::class)
-    fun getUserInfo(): Flow<User?> =
-        supabase.from("users").selectSingleValueAsFlow(User::id) {
-            eq("id", userId)
-        }
+    fun getUserStream(role: Role, userId: String): Flow<User> {
+        val channel = supabase.channel("${role.text}:$currentUserId") { isPrivate = true }
+        return channelFlow {
+            val changeFlow = channel.broadcastFlow<JsonObject>(event = "UPDATE")
 
-    @OptIn(SupabaseExperimental::class)
-    fun getPartnerInfo(partnerId: String): Flow<User?> =
-        supabase.from("users").selectSingleValueAsFlow(User::id) {
-            eq("id", partnerId)
-        }
+            channel.subscribe(blockUntilSubscribed = true)
 
-    suspend fun getPairing(userId: String): Pairing? =
-        supabase.from("pairings").select {
-            filter {
-                or {
-                    eq("user_id", userId)
-                    eq("partner_id", userId)
-                }
+            changeFlow.onEach { payload ->
+                val res = Json.decodeFromJsonElement<BroadcastResponse>(payload)
+                send(Json.decodeFromJsonElement<User>(res.record))
+            }.launchIn(this)
+        }.onStart {
+            emit(
+                supabase.from("users").select {
+                    filter { eq("id", userId) }
+                }.decodeSingle<User>()
+            )
+
+        }.onCompletion {
+            channel.unsubscribe()
+        }
+    }
+
+    suspend fun getPairing(userId: String): Pairing = supabase.from("pairings").select {
+        filter {
+            or {
+                eq("user_id", userId)
+                eq("partner_id", userId)
             }
-        }.decodeSingleOrNull<Pairing>()
-
-    @OptIn(SupabaseExperimental::class)
-    fun getPairingByUserId(userId: String) =
-        supabase.from("pairings")
-            .selectAsFlow(Pairing::id, filter = FilterOperation("user_id", FilterOperator.EQ, userId))
-
-    @OptIn(SupabaseExperimental::class)
-    fun getPairingByPartnerId(userId: String) =
-        supabase.from("pairings")
-            .selectAsFlow(Pairing::id, filter = FilterOperation("partner_id", FilterOperator.EQ, userId))
-
-    @OptIn(SupabaseExperimental::class)
-    fun getPairingFlow(userId: String): Flow<List<Pairing>> =
-        combine(getPairingByUserId(userId), getPairingByPartnerId(userId)) { pairings, pairings1 ->
-            pairings + pairings1
         }
+    }.decodeSingle<Pairing>()
 
+    @OptIn(SupabaseExperimental::class)
+    fun getPairingStream(): Flow<Pairing> {
+        val channel = supabase.channel("pairing:$currentUserId") { isPrivate = true }
+        return channelFlow {
+            val changeFlow = channel.broadcastFlow<JsonObject>(event = "pairing_changes")
+
+            channel.subscribe(blockUntilSubscribed = true)
+
+            changeFlow.onEach { payload ->
+                val res = Json.decodeFromJsonElement<BroadcastResponse>(payload)
+                send(Json.decodeFromJsonElement<Pairing>(res.record))
+            }.launchIn(this)
+        }.onStart {
+            emit(getPairing(currentUserId))
+        }.onCompletion {
+            channel.unsubscribe()
+        }
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun getUserAndPartnerInfo(): Flow<Pair<User?, User?>> =
-        getUserInfo().flatMapLatest { user ->
-            getPairingFlow(userId).flatMapLatest { pairings ->
-                Log.d("supabase", pairings.toString())
-                val partnerId = pairings.first().getPartnerId(userId)
-                if (partnerId != null) {
-                    getPartnerInfo(partnerId).map { partner ->
-                        Pair(user, partner)
-                    }
-                } else {
-                    flowOf(Pair(user, null))
-                }
+    fun getProfileStream(): Flow<Pair<User, User?>> {
+        val userFlow = getUserStream(role = Role.USER, userId = currentUserId)
+
+        val partnerFlow = getPairingStream().flatMapLatest {
+            Log.d("debug_pairing", it.toString())
+            val partnerId = it.getPartnerId(currentUserId)
+            if (partnerId != null) {
+                getUserStream(role = Role.PARTNER, userId = partnerId)
+            } else {
+                flowOf(null)
             }
         }
 
+        return combine(userFlow, partnerFlow) { user, partner ->
+            Log.d("debug_user", user.toString())
+            Log.d("debug_partner", partner.toString())
+            Pair(user, partner)
+        }
+    }
 
     suspend fun addPartner(partnerEmail: String) = withContext(Dispatchers.IO) {
         val partnerId = supabase.from("users").select {
@@ -104,17 +113,42 @@ class UserRepository(val uiScope: CoroutineScope) {
             throw Exception("No account exists for this email.")
         }
 
-        val pairing = getPairing(userId)
-        if (pairing == null) {
-            supabase.from("pairings").insert(Pairing(userId = userId, partnerId = partnerId))
-        } else {
-            if (userId == pairing.userId) {
-                supabase.from("pairings").update({
-                    set("partner_id", partnerId)
-                }) {
-                    filter { eq("id", pairing.id!!) }
-                }
+        supabase.from("pairings").update({
+            set("partner_id", partnerId)
+        }) {
+            filter { eq("user_id", currentUserId) }
+        }
+    }
+
+    suspend fun uploadUserAvatar(context: Context, avatarUri: Uri) = withContext(Dispatchers.IO) {
+        val signedUrl = supabase.storage.from("avatars").createSignedUploadUrl("$currentUserId.png", upsert = true)
+        val byteArray = context.contentResolver.openInputStream(avatarUri)?.use { it.buffered().readBytes() }
+
+        supabase.storage.from("avatars")
+            .uploadToSignedUrl(path = "$currentUserId.png", token = signedUrl.token, data = byteArray!!) {
+                upsert = true
             }
+    }
+
+    suspend fun getUserAvatarUrl(userId: String) = withContext(Dispatchers.IO) {
+        supabase.storage.from("avatars").createSignedUrl(path = "$userId.png", expiresIn = 1.hours)
+    }
+
+    fun getAvatarStream(): Flow<Avatar> {
+        val channel = supabase.channel("user:$currentUserId:storage_objects") {
+            isPrivate = true
+        }
+        return channelFlow {
+            val broadcastFlow = channel.postgresChangeFlow<PostgresAction>(schema = "storage")
+            broadcastFlow.onEach {
+                if (it is PostgresAction.Update || it is PostgresAction.Insert) {
+                    send(Json.decodeFromJsonElement<Avatar>(it.record))
+                }
+            }.launchIn(this)
+
+            channel.subscribe(blockUntilSubscribed = true)
+        }.onCompletion {
+            channel.unsubscribe()
         }
     }
 }
