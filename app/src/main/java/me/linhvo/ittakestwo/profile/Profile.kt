@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale.Companion.Crop
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -29,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
+import com.bumptech.glide.integration.compose.GlideImage
 import me.linhvo.ittakestwo.R
 import me.linhvo.ittakestwo.model.User
 
@@ -45,7 +48,6 @@ fun ProfileDialog(
     user: User?,
     partner: User?,
     uploadAvatar: (Context, Uri) -> Unit,
-//    getAvatar: (String) -> Unit
 ) {
 //    val eventList = listOf(Event(1, "wedding", "10-12-2020"))
     val eventList = emptyList<Event>()
@@ -100,7 +102,6 @@ fun ProfileDialog(
                     user = partner,
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     textColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    onAvatarClick = { pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) }
                 )
             }
 
@@ -124,13 +125,14 @@ fun ProfileDialog(
     }
 }
 
+@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun ProfileCard(
     containerWidth: Dp,
     user: User?,
     containerColor: Color,
     textColor: Color,
-    onAvatarClick: () -> Unit
+    onAvatarClick: () -> Unit = {}
 ) {
     Column(
         verticalArrangement = Arrangement.Center,
@@ -143,10 +145,10 @@ fun ProfileCard(
 //            )
             .padding(10.dp)
     ) {
-        if (user?.avatarUrl == null) {
+        if (user?.avatarFile == null) {
             Box(
                 modifier = Modifier
-                    .size(60.dp)
+                    .size(70.dp)
                     .clip(RoundedCornerShape(10.dp))
                     .background(containerColor)
                     .clickable(enabled = true, onClick = { onAvatarClick() })
@@ -161,16 +163,15 @@ fun ProfileCard(
                 )
             }
         } else {
-//            AsyncImage(model = user.getA)
-//            Image(
-//                painter = painterResource(R.drawable.home_image),
-//                contentDescription = "user avatar",
-//                contentScale = Crop,
-//                modifier = Modifier
-//                    .size(60.dp)
-//                    .clip(RoundedCornerShape(8.dp))
-//                .align(Alignment.TopEnd)
-//            )
+            GlideImage(
+                model = user.getAvatarUrl(),
+                contentDescription = "user avatar",
+                contentScale = Crop,
+                modifier = Modifier
+                    .size(70.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .clickable(enabled = true, onClick = { onAvatarClick() })
+            )
         }
 
         Text(text = user?.displayName ?: "", fontSize = 18.sp, modifier = Modifier.padding(top = 10.dp))

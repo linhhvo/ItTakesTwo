@@ -15,7 +15,6 @@ import me.linhvo.ittakestwo.data.UserRepository
 import me.linhvo.ittakestwo.model.User
 
 data class HomeUiState(
-    val userAvatar: String? = null,
     val user: User? = null,
     val partner: User? = null,
     val errorMessage: String? = null,
@@ -32,13 +31,11 @@ class HomeViewModel : ViewModel() {
     val uiState: StateFlow<HomeUiState> =
         combine(
             userRepository.getProfileStream(),
-//            userRepository.getAvatarStream(),
             _errorMessage,
             _shouldShowProfile
         )
         { (user, partner), errorMessage, shouldShowProfile ->
             HomeUiState(
-//                userAvatar = avatar?.content.toString(),
                 user = user,
                 partner = partner,
                 errorMessage = errorMessage,
@@ -86,16 +83,6 @@ class HomeViewModel : ViewModel() {
                 } else {
                     Log.d("debug_uploadAvatar", e.message.toString())
                 }
-            }
-        }
-    }
-
-    fun getAvatar(userId: String) {
-        viewModelScope.launch {
-            try {
-                userRepository.getUserAvatarUrl(userId)
-            } catch (e: Exception) {
-                _errorMessage.value = e.message
             }
         }
     }

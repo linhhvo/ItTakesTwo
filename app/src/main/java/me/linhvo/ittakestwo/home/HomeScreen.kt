@@ -1,8 +1,10 @@
 package me.linhvo.ittakestwo.home
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -22,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
+import com.bumptech.glide.integration.compose.GlideImage
 import me.linhvo.ittakestwo.R
 import me.linhvo.ittakestwo.model.User
 import me.linhvo.ittakestwo.profile.AddPartnerDialog
@@ -54,17 +58,17 @@ fun HomeScreen() {
         user = uiState.user,
         partner = uiState.partner,
         signOut = viewModel::signOut,
-        onProfileClick = viewModel::openProfile
+        onProfileClick = viewModel::openProfile,
     )
 }
 
+@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun HomeContent(
     user: User?,
     partner: User?,
     signOut: () -> Unit,
-    onProfileClick: () -> Unit
-
+    onProfileClick: () -> Unit,
 ) {
 
     val containerColorForeground1 = MaterialTheme.colorScheme.primary
@@ -90,7 +94,7 @@ fun HomeContent(
                 .width(100.dp)
                 .clickable(enabled = true, onClick = { onProfileClick() })
         ) {
-            if (partner?.avatarUrl == null) {
+            if (partner?.avatarFile == null) {
                 Box(
                     modifier = Modifier
                         .offset(x = 40.dp)
@@ -110,13 +114,25 @@ fun HomeContent(
                             }
                     )
                 }
+            } else {
+                Log.d("debug_profile", partner.getAvatarUrl().toString())
+                GlideImage(
+                    model = partner.getAvatarUrl(),
+                    contentDescription = "user avatar",
+                    contentScale = Crop,
+                    modifier = Modifier
+                        .offset(x = 40.dp)
+                        .size(55.dp)
+                        .clip(CircleShape)
+                        .border(width = 1.5.dp, color = MaterialTheme.colorScheme.background, shape = CircleShape)
+                )
             }
 
             // user's profile picture
-            if (user?.avatarUrl == null) {
+            if (user?.avatarFile == null) {
                 Box(
                     modifier = Modifier
-                        .size(54.dp)
+                        .size(55.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.background)
                 ) {
@@ -132,6 +148,16 @@ fun HomeContent(
                             }
                     )
                 }
+            } else {
+                GlideImage(
+                    model = user.getAvatarUrl(),
+                    contentDescription = "user avatar",
+                    contentScale = Crop,
+                    modifier = Modifier
+                        .size(55.dp)
+                        .clip(CircleShape)
+                        .border(width = 1.5.dp, color = MaterialTheme.colorScheme.background, shape = CircleShape)
+                )
             }
         }
 

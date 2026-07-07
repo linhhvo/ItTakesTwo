@@ -6,19 +6,30 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonIgnoreUnknownKeys
 import kotlinx.serialization.json.JsonObject
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
+@JsonIgnoreUnknownKeys
 data class User(
     val id: String,
-
     val email: String,
 
     @SerialName("display_name")
     val displayName: String,
 
-    @SerialName("avatar_url")
-    val avatarUrl: String? = null,
+    @SerialName("avatar_file")
+    val avatarFile: String? = null,
+
+    @SerialName("updated_at")
+    val updatedAt: String,
+
+    private var avatarUrl: String? = null
 ) {
     fun getInitial(): String = displayName.first().toString().uppercase()
+    fun setAvatarUrl(url: String?) {
+        avatarUrl = url
+    }
+
+    fun getAvatarUrl() = avatarUrl
 }
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -31,7 +42,7 @@ data class Pairing(
     val userId: String,
 
     @SerialName("partner_id")
-    val partnerId: String?
+    val partnerId: String? = null
 ) {
     fun getPartnerId(currentUser: String): String? =
         if (currentUser == userId) partnerId
@@ -39,16 +50,6 @@ data class Pairing(
         else null
 
 }
-
-@OptIn(ExperimentalSerializationApi::class)
-@Serializable
-@JsonIgnoreUnknownKeys
-data class Avatar(
-    val name: String,
-    val owner: String,
-    @SerialName("updated_at")
-    val updatedAt: String
-)
 
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
