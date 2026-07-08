@@ -2,7 +2,6 @@ package me.linhvo.ittakestwo.home
 
 import android.annotation.SuppressLint
 import android.util.Log
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -12,13 +11,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.layout.ContentScale.Companion.Crop
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,7 +25,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
-import me.linhvo.ittakestwo.R
 import me.linhvo.ittakestwo.model.User
 import me.linhvo.ittakestwo.profile.AddPartnerDialog
 import me.linhvo.ittakestwo.profile.ProfileDialog
@@ -37,6 +35,10 @@ import me.linhvo.ittakestwo.ui.components.Dialog
 fun HomeScreen() {
     val viewModel: HomeViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.getBackground()
+    }
 
     if (uiState.errorMessage != null) {
         Dialog(errorMessage = uiState.errorMessage!!, onDismissRequest = viewModel::resetErrorMessage)
@@ -57,6 +59,7 @@ fun HomeScreen() {
     HomeContent(
         user = uiState.user,
         partner = uiState.partner,
+        backgroundImageUrl = uiState.backgroundImageUrl,
         signOut = viewModel::signOut,
         onProfileClick = viewModel::openProfile,
     )
@@ -67,20 +70,37 @@ fun HomeScreen() {
 fun HomeContent(
     user: User?,
     partner: User?,
+    backgroundImageUrl: String?,
     signOut: () -> Unit,
     onProfileClick: () -> Unit,
 ) {
 
     val containerColorForeground1 = MaterialTheme.colorScheme.primary
     val containerColorForeground2 = MaterialTheme.colorScheme.primaryContainer
+    val backgroundColor = MaterialTheme.colorScheme.surface
 
-    Image(
-        painter = painterResource(R.drawable.home_image),
-        contentDescription = null,
-        alpha = 0.5f,
-        contentScale = Crop,
-        modifier = Modifier.fillMaxSize(),
-    )
+    if (backgroundImageUrl != null) {
+        GlideImage(
+            model = backgroundImageUrl,
+            contentDescription = "background image",
+            contentScale = Crop,
+            alpha = 0.5f,
+            modifier = Modifier.fillMaxSize()
+        )
+    } else {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(color = backgroundColor)
+        )
+    }
+//    Image(
+//        painter = painterResource(R.drawable.home_image),
+//        contentDescription = null,
+//        alpha = 0.5f,
+//        contentScale = Crop,
+//        modifier = Modifier.fillMaxSize(),
+//    )
 
     Row(
         modifier = Modifier
@@ -100,7 +120,7 @@ fun HomeContent(
                         .offset(x = 40.dp)
                         .size(54.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.background)
+                        .background(backgroundColor)
                 ) {
                     Text(
                         text = partner?.getInitial() ?: "",
@@ -134,7 +154,7 @@ fun HomeContent(
                     modifier = Modifier
                         .size(55.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.background)
+                        .background(backgroundColor)
                 ) {
                     Text(
                         text = user?.getInitial() ?: "",

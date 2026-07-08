@@ -11,12 +11,14 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
 import kotlinx.coroutines.launch
 import me.linhvo.ittakestwo.data.AuthRepository
+import me.linhvo.ittakestwo.data.PairingRepository
 import me.linhvo.ittakestwo.data.UserRepository
 import me.linhvo.ittakestwo.model.User
 
 data class HomeUiState(
     val user: User? = null,
     val partner: User? = null,
+    val backgroundImageUrl: String? = null,
     val errorMessage: String? = null,
     val shouldShowProfile: Boolean = false
 )
@@ -24,20 +26,24 @@ data class HomeUiState(
 class HomeViewModel : ViewModel() {
     private val authRepository = AuthRepository()
     private val userRepository = UserRepository()
+    private val pairingRepository = PairingRepository()
 
     private val _errorMessage: MutableStateFlow<String?> = MutableStateFlow(null)
     private val _shouldShowProfile = MutableStateFlow(false)
+    private val _backgroundImage: MutableStateFlow<String?> = MutableStateFlow(null)
 
     val uiState: StateFlow<HomeUiState> =
         combine(
-            userRepository.getProfileStream(),
+            pairingRepository.getProfileStream(),
             _errorMessage,
-            _shouldShowProfile
+            _shouldShowProfile,
+            _backgroundImage
         )
-        { (user, partner), errorMessage, shouldShowProfile ->
+        { (user, partner), errorMessage, shouldShowProfile, backgroundImage ->
             HomeUiState(
                 user = user,
                 partner = partner,
+                backgroundImageUrl = backgroundImage,
                 errorMessage = errorMessage,
                 shouldShowProfile = shouldShowProfile
             )
@@ -66,7 +72,7 @@ class HomeViewModel : ViewModel() {
     fun addPartner(partnerEmail: String) {
         viewModelScope.launch {
             try {
-                userRepository.addPartner(partnerEmail)
+                pairingRepository.addPartner(partnerEmail)
             } catch (e: Exception) {
                 _errorMessage.value = e.message
             }
@@ -97,6 +103,13 @@ class HomeViewModel : ViewModel() {
 
     fun closeProfile() {
         _shouldShowProfile.value = false
+    }
+
+    fun getBackground() {
+        Log.d("debug_background", "get background...")
+        viewModelScope.launch {
+            _backgroundImage.value = pairingRepository.getBackgroundUrlFromNet()
+        }
     }
 
 }
