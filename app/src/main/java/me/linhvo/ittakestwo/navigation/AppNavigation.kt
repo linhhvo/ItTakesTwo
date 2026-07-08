@@ -103,7 +103,10 @@ fun AppNavigation() {
 
                     entry<Route.Chat> {
                         Log.d("backstack -- chat", backStack.toList().toString())
-                        ChatScreen()
+                        ChatScreen(navigateToHome = dropUnlessResumed {
+                            backStack.clear()
+                            backStack.add(Route.Home)
+                        })
                     }
                     entry<Route.Settings> {
                         Log.d("backstack -- settings", backStack.toList().toString())
