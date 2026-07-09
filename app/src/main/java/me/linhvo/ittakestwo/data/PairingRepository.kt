@@ -20,7 +20,7 @@ import me.linhvo.ittakestwo.model.User
 import kotlin.time.Duration.Companion.hours
 
 class PairingRepository {
-    val currentUserId = supabase.auth.currentSessionOrNull()?.user?.id ?: ""
+    private val currentUserId = supabase.auth.currentSessionOrNull()?.user?.id ?: ""
 
     //TODO: keep track of when the background is updated and only get new url if changed
     suspend fun getBackgroundUrlFromNet(): String? = withContext(Dispatchers.IO) {
@@ -79,6 +79,18 @@ class PairingRepository {
 
         return combine(userFlow, partnerFlow) { user, partner ->
             Pair(user, partner)
+        }
+    }
+
+    suspend fun getProfileInfo(): Pair<User, User?> {
+        val userRepository = UserRepository()
+        val user = userRepository.getUser(currentUserId)
+        val partnerId = getPairing().getPartnerId(currentUserId)
+        if (partnerId != null) {
+            val partner = userRepository.getUser(userId = partnerId)
+            return Pair(user, partner)
+        } else {
+            return Pair(user, null)
         }
     }
 
