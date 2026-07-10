@@ -1,7 +1,10 @@
 package me.linhvo.ittakestwo.model
 
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 @Serializable
 data class Message(
@@ -11,14 +14,16 @@ data class Message(
     val content: String,
 
     @SerialName("created_at")
-    val createdAt: String,
+    val createdAt: Instant,
 
     @SerialName("sent_at")
-    val sentAt: String,
+    val sentAt: Instant,
 
     @SerialName("read_at")
-    val readAt: String?,
+    val readAt: Instant?,
 
     var isSenderMe: Boolean = false
 ) {
+    fun parseDateTime(instant: Instant) =
+        instant.toLocalDateTime(TimeZone.currentSystemDefault())
 }
