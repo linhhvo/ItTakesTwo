@@ -16,7 +16,8 @@ data class ChatUiState(
     val user: User? = null,
     val partner: User? = null,
     val errorMessage: String? = null,
-    val chatMessages: List<Message> = emptyList()
+    val chatMessages: List<Message> = emptyList(),
+    val userInput: String = ""
 )
 
 class ChatViewModel : ViewModel() {
@@ -26,12 +27,17 @@ class ChatViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState = _uiState.asStateFlow()
 
+    fun onInputChange(input: String) {
+        _uiState.update { it.copy(userInput = input) }
+    }
+
     init {
         Log.d("debug_VM", "chat VM init")
         viewModelScope.launch {
             val users = pairingRepository.getProfileInfo()
             val messages = chatRepository.getChatMessages()
 
+            Log.d("debug_chat", messages.toString())
             _uiState.update { it.copy(user = users.first, partner = users.second, chatMessages = messages) }
         }
     }
