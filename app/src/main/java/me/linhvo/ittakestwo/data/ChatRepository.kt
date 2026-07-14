@@ -1,15 +1,24 @@
 package me.linhvo.ittakestwo.data
 
+import io.github.jan.supabase.annotations.SupabaseExperimental
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.postgrest.query.filter.FilterOperation
+import io.github.jan.supabase.postgrest.query.filter.FilterOperator
+import io.github.jan.supabase.realtime.selectAsFlow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.withContext
 import me.linhvo.ittakestwo.model.Message
 
 class ChatRepository {
-    val currentUserId = supabase.auth.currentSessionOrNull()?.user?.id ?: ""
-    val userRepository = UserRepository()
+    private val currentUserId = supabase.auth.currentSessionOrNull()?.user?.id ?: ""
+    private val userRepository = UserRepository()
+    private val pairingRepository = PairingRepository()
 
-    suspend fun getChatMessages(): List<Message> =
+    suspend fun getMessages(): List<Message> = withContext(Dispatchers.IO) {
         supabase.from("chat_messages").select {
             filter {
                 or {
@@ -17,7 +26,7 @@ class ChatRepository {
                     eq("recipient", currentUserId)
                 }
             }
-            order(column = "created_at", order = Order.DESCENDING)
+            order(column = "sent_at", order = Order.DESCENDING)
         }.decodeList<Message>().map {
             val senderName = userRepository.getUser(it.sender).displayName
             val recipientName = userRepository.getUser(it.sender).displayName

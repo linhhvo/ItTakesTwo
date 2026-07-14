@@ -33,7 +33,7 @@ fun Message(
                 .fillMaxWidth()
                 .padding(bottom = 5.dp)
         ) {
-            val timestamp = message.parseDateTime(message.sentAt)
+            val timestamp = message.parseDateTime(message.sentAt!!)
             val iconTint =
                 if (message.readAt != null) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.tertiaryContainer
             Icon(
@@ -92,7 +92,7 @@ fun Message(
                     .widthIn(max = (screenWidth * 0.75).dp)
             )
 
-            val timestamp = message.parseDateTime(message.sentAt)
+            val timestamp = message.parseDateTime(message.sentAt!!)
             Text(
                 text = "${"%02d".format(timestamp.hour)}:${"%02d".format(timestamp.minute)}",
                 fontSize = 9.sp,

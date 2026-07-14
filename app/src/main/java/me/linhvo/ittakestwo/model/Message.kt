@@ -8,19 +8,16 @@ import kotlin.time.Instant
 
 @Serializable
 data class Message(
-    val id: String,
+    val id: String? = null,
     val sender: String,
     val recipient: String,
     val content: String,
 
-    @SerialName("created_at")
-    val createdAt: Instant,
-
     @SerialName("sent_at")
-    val sentAt: Instant,
+    val sentAt: Instant? = null,
 
     @SerialName("read_at")
-    val readAt: Instant?,
+    val readAt: Instant? = null,
 
     var isSenderMe: Boolean = false
 ) {

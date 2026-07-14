@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
@@ -23,7 +24,12 @@ import androidx.compose.ui.unit.dp
 import me.linhvo.ittakestwo.R
 
 @Composable
-fun InputBar(userInput: String, onInputChange: (String) -> Unit, modifier: Modifier = Modifier) {
+fun InputBar(
+    userInput: String,
+    onInputChange: (String) -> Unit,
+    sendMessage: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val screenWidth = LocalConfiguration.current.screenWidthDp
     val screenHeight = LocalConfiguration.current.screenHeightDp
 
@@ -50,7 +56,7 @@ fun InputBar(userInput: String, onInputChange: (String) -> Unit, modifier: Modif
                     .height(24.dp)
                     .clickable(
                         enabled = true,
-                        onClick = {},
+                        onClick = {/*TODO*/ },
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() })
             )
@@ -62,7 +68,7 @@ fun InputBar(userInput: String, onInputChange: (String) -> Unit, modifier: Modif
                     .height(30.dp)
                     .clickable(
                         enabled = true,
-                        onClick = {},
+                        onClick = {/*TODO*/ },
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() })
             )
@@ -92,6 +98,8 @@ fun InputBar(userInput: String, onInputChange: (String) -> Unit, modifier: Modif
                 .align(Alignment.CenterVertically)
         )
 
+        val keyboardController = LocalSoftwareKeyboardController.current
+
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.height(45.dp)) {
             Icon(
                 painter = painterResource(R.drawable.send_icon),
@@ -101,7 +109,10 @@ fun InputBar(userInput: String, onInputChange: (String) -> Unit, modifier: Modif
                     .padding(end = 15.dp)
                     .clickable(
                         enabled = true,
-                        onClick = {},
+                        onClick = {
+                            keyboardController?.hide()
+                            sendMessage()
+                        },
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() })
             )

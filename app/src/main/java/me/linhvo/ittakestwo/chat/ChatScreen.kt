@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import me.linhvo.ittakestwo.model.Message
+import me.linhvo.ittakestwo.ui.components.Dialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,6 +25,10 @@ fun ChatScreen(navigateToHome: () -> Unit) {
     val viewModel: ChatViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(reverseLayout = true)
+
+    if (uiState.errorMessage != null) {
+        Dialog(errorMessage = uiState.errorMessage!!, onDismissRequest = viewModel::resetErrorMessage)
+    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -53,6 +58,7 @@ fun ChatScreen(navigateToHome: () -> Unit) {
             InputBar(
                 userInput = uiState.userInput,
                 onInputChange = viewModel::onInputChange,
+                sendMessage = viewModel::sendMessage,
                 modifier = Modifier.padding(bottom = 10.dp)
 
             )
@@ -71,15 +77,15 @@ fun ChatContent(messages: List<Message>, modifier: Modifier = Modifier) {
             .padding(top = 0.dp, start = 20.dp, end = 20.dp, bottom = 10.dp)
     ) {
         itemsIndexed(
-            items = messages, key = { _, message -> message.id }) { index, currentMessage ->
+            items = messages, key = { _, message -> message.id!! }) { index, currentMessage ->
             val prevMessage = messages.getOrNull(index + 1)
             val isPrevMessageBySameSender = prevMessage?.sender == currentMessage.sender
 
-            val currentMessageSentAt = currentMessage.parseDateTime(currentMessage.sentAt)
+            val currentMessageSentAt = currentMessage.parseDateTime(currentMessage.sentAt!!)
 
             Column {
                 if (prevMessage == null
-                    || currentMessageSentAt.date > prevMessage.parseDateTime(prevMessage.sentAt).date
+                    || currentMessageSentAt.date > prevMessage.parseDateTime(prevMessage.sentAt!!).date
                 ) {
                     HorizontalDivider(
                         color = MaterialTheme.colorScheme.outline.copy(alpha = .5f),

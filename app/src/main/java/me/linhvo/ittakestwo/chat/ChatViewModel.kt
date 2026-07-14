@@ -31,13 +31,27 @@ class ChatViewModel : ViewModel() {
         _uiState.update { it.copy(userInput = input) }
     }
 
+    fun sendMessage() {
+        viewModelScope.launch {
+            try {
+                chatRepository.addMessage(_uiState.value.userInput)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = e.message) }
+            }
+        }
+        _uiState.update { it.copy(userInput = "") }
+    }
+
+    fun resetErrorMessage() {
+        _uiState.update { it.copy(errorMessage = null) }
+    }
+
     init {
         Log.d("debug_VM", "chat VM init")
         viewModelScope.launch {
             val users = pairingRepository.getProfileInfo()
-            val messages = chatRepository.getChatMessages()
+            val messages = chatRepository.getMessages()
 
-            Log.d("debug_chat", messages.toString())
             _uiState.update { it.copy(user = users.first, partner = users.second, chatMessages = messages) }
         }
     }
