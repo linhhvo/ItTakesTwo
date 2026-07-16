@@ -54,6 +54,20 @@ class ChatViewModel : ViewModel() {
 
             _uiState.update { it.copy(user = users.first, partner = users.second, chatMessages = messages) }
         }
+
+        viewModelScope.launch {
+            chatRepository.getMessageStream().collect { newMessage ->
+//                Log.d("debug_newMessage", newMessage.toString())
+                val newList = _uiState.value.chatMessages.toMutableList()
+                newList.add(0, newMessage)
+                _uiState.update { it.copy(chatMessages = newList) }
+            }
+
+        }
+
+        viewModelScope.launch {
+            chatRepository.updateReadTime()
+        }
     }
 
     override fun onCleared() {

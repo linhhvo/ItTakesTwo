@@ -4,8 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,7 +26,8 @@ import me.linhvo.ittakestwo.ui.components.Dialog
 fun ChatScreen(navigateToHome: () -> Unit) {
     val viewModel: ChatViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(reverseLayout = true)
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
 
     if (uiState.errorMessage != null) {
         Dialog(errorMessage = uiState.errorMessage!!, onDismissRequest = viewModel::resetErrorMessage)
@@ -69,7 +72,16 @@ fun ChatScreen(navigateToHome: () -> Unit) {
 @Composable
 fun ChatContent(messages: List<Message>, modifier: Modifier = Modifier) {
     val screenWidth = LocalConfiguration.current.screenWidthDp
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(messages) {
+        if (listState.firstVisibleItemIndex == 1) {
+            listState.animateScrollToItem(0)
+        }
+    }
+
     LazyColumn(
+        state = listState,
         reverseLayout = true,
         modifier = modifier
             .fillMaxSize()

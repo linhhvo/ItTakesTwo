@@ -1,21 +1,24 @@
 package me.linhvo.ittakestwo.data
 
+import android.util.Log
 import io.github.jan.supabase.annotations.SupabaseExperimental
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Count
 import io.github.jan.supabase.postgrest.query.Order
-import io.github.jan.supabase.postgrest.query.filter.FilterOperation
-import io.github.jan.supabase.postgrest.query.filter.FilterOperator
-import io.github.jan.supabase.realtime.selectAsFlow
+import io.github.jan.supabase.realtime.PostgresAction
+import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromJsonElement
 import me.linhvo.ittakestwo.model.Message
+import kotlin.time.Clock
 
 class ChatRepository {
     private val currentUserId = supabase.auth.currentSessionOrNull()?.user?.id ?: ""
-    private val userRepository = UserRepository()
     private val pairingRepository = PairingRepository()
 
     suspend fun getMessages(): List<Message> = withContext(Dispatchers.IO) {
@@ -28,9 +31,66 @@ class ChatRepository {
             }
             order(column = "sent_at", order = Order.DESCENDING)
         }.decodeList<Message>().map {
-            val senderName = userRepository.getUser(it.sender).displayName
-            val recipientName = userRepository.getUser(it.sender).displayName
-
-            it.copy(sender = senderName, recipient = recipientName, isSenderMe = it.sender == currentUserId)
+            it.copy(isSenderMe = it.sender == currentUserId)
         }
+    }
+
+    @OptIn(SupabaseExperimental::class)
+    fun getMessageStream(): Flow<Message> {
+        val channel = supabase.channel("chat:$currentUserId") { isPrivate = true }
+        return channelFlow {
+            val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") { table = "chat_messages" }
+            channel.subscribe(blockUntilSubscribed = true)
+
+            changeFlow.onEach {
+                if (it is PostgresAction.Insert) {
+                    val message = Json.decodeFromJsonElement<Message>(it.record).apply {
+                        isSenderMe = this.sender == currentUserId
+                    }
+
+//                    Log.d("debug_newMessageInRepo", message.toString())
+                    send(message)
+                }
+            }.launchIn(this)
+        }.onCompletion {
+            channel.unsubscribe()
+        }
+    }
+
+    suspend fun addMessage(content: String) = withContext(Dispatchers.IO) {
+        val message = Message(
+            sender = currentUserId,
+            recipient = pairingRepository.getPairing().getPartnerId(currentUserId)!!,
+            content = content
+        )
+        supabase.from("chat_messages").insert(message)
+    }
+
+    suspend fun getUnreadCount() = withContext(Dispatchers.IO) {
+        supabase.from("chat_messages").select {
+            filter {
+                and {
+                    eq("recipient", currentUserId)
+                    exact("read_at", null)
+                }
+            }
+            count(Count.EXACT)
+        }.countOrNull() ?: 0
+    }
+
+    suspend fun updateReadTime() = withContext(Dispatchers.IO) {
+        if (getUnreadCount() > 0) {
+            Log.d("debug_readTime", "updating message read time to ${Clock.System.now()}")
+            supabase.from("chat_messages").update({
+                set("read_at", Clock.System.now())
+            }) {
+                filter {
+                    and {
+                        eq("recipient", currentUserId)
+                        exact("read_at", null)
+                    }
+                }
+            }
+        }
+    }
 }
