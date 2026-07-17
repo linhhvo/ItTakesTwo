@@ -33,10 +33,13 @@ class ChatViewModel : ViewModel() {
 
     fun sendMessage() {
         viewModelScope.launch {
-            try {
-                chatRepository.addMessage(_uiState.value.userInput)
-            } catch (e: Exception) {
-                _uiState.update { it.copy(errorMessage = e.message) }
+            val cleanInput = _uiState.value.userInput.trim()
+            if (cleanInput.isNotEmpty()) {
+                try {
+                    chatRepository.addMessage(cleanInput)
+                } catch (e: Exception) {
+                    _uiState.update { it.copy(errorMessage = e.message) }
+                }
             }
         }
         _uiState.update { it.copy(userInput = "") }
@@ -44,6 +47,12 @@ class ChatViewModel : ViewModel() {
 
     fun resetErrorMessage() {
         _uiState.update { it.copy(errorMessage = null) }
+    }
+
+    fun markAsRead() {
+        viewModelScope.launch {
+            chatRepository.updateReadTime()
+        }
     }
 
     init {
@@ -56,17 +65,20 @@ class ChatViewModel : ViewModel() {
         }
 
         viewModelScope.launch {
-            chatRepository.getMessageStream().collect { newMessage ->
-//                Log.d("debug_newMessage", newMessage.toString())
+            chatRepository.getMessageStream().collect { message ->
+//                Log.d("debug_newMessage", message.toString())
                 val newList = _uiState.value.chatMessages.toMutableList()
-                newList.add(0, newMessage)
+                val existingMessageInd = newList.indexOfFirst { it.id == message.id }
+
+                if (existingMessageInd != -1) {
+                    newList.removeAt(existingMessageInd)
+                    newList.add(existingMessageInd, message)
+                } else {
+                    newList.add(0, message)
+                }
+
                 _uiState.update { it.copy(chatMessages = newList) }
             }
-
-        }
-
-        viewModelScope.launch {
-            chatRepository.updateReadTime()
         }
     }
 

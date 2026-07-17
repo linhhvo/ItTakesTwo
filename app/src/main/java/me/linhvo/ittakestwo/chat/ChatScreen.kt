@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -18,6 +19,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import me.linhvo.ittakestwo.model.Message
 import me.linhvo.ittakestwo.ui.components.Dialog
 
@@ -56,6 +60,7 @@ fun ChatScreen(navigateToHome: () -> Unit) {
         ) {
             ChatContent(
                 messages = uiState.chatMessages,
+                markAsRead = viewModel::markAsRead,
                 modifier = Modifier.weight(1f)
             )
             InputBar(
@@ -70,7 +75,7 @@ fun ChatScreen(navigateToHome: () -> Unit) {
 }
 
 @Composable
-fun ChatContent(messages: List<Message>, modifier: Modifier = Modifier) {
+fun ChatContent(messages: List<Message>, markAsRead: () -> Unit, modifier: Modifier = Modifier) {
     val screenWidth = LocalConfiguration.current.screenWidthDp
     val listState = rememberLazyListState()
 
@@ -78,6 +83,14 @@ fun ChatContent(messages: List<Message>, modifier: Modifier = Modifier) {
         if (listState.firstVisibleItemIndex == 1) {
             listState.animateScrollToItem(0)
         }
+    }
+
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.firstVisibleItemIndex }
+            .map { index -> index == 0 }
+            .distinctUntilChanged()
+            .filter { it }
+            .collect { markAsRead() }
     }
 
     LazyColumn(
