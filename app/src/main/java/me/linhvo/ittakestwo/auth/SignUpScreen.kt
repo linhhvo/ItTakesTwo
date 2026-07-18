@@ -19,14 +19,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import me.linhvo.ittakestwo.R
 import me.linhvo.ittakestwo.ui.components.Dialog
 
 @Composable
-fun SignUpScreen() {
-    val viewModel: SignUpViewModel = viewModel()
+fun SignUpScreen(viewModel: SignUpViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     if (uiState.errorMessage != null) {

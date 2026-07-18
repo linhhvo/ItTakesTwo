@@ -3,6 +3,7 @@ package me.linhvo.ittakestwo.auth
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.auth.exception.AuthRestException
 import io.github.jan.supabase.exceptions.RestException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,6 +12,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerializationException
 import me.linhvo.ittakestwo.data.AuthRepository
+import javax.inject.Inject
 
 data class SignUpUiState(
     val displayName: String = "",
@@ -18,8 +20,8 @@ data class SignUpUiState(
     val errorMessage: String? = null
 )
 
-class SignUpViewModel : ViewModel() {
-    private val authRepository = AuthRepository()
+@HiltViewModel
+class SignUpViewModel @Inject constructor(private val authRepository: AuthRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(SignUpUiState())
     val uiState = _uiState.asStateFlow()
 
@@ -41,6 +43,7 @@ class SignUpViewModel : ViewModel() {
                     password = passwordStr
                 )
             } catch (e: Exception) {
+                Log.d("debug_signup", e.toString())
                 _uiState.update { state ->
                     state.copy(
                         errorMessage = when (e) {

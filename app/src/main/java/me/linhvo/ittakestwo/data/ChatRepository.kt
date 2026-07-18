@@ -1,7 +1,7 @@
 package me.linhvo.ittakestwo.data
 
+import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.annotations.SupabaseExperimental
-import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Count
 import io.github.jan.supabase.postgrest.query.Order
@@ -15,36 +15,40 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import me.linhvo.ittakestwo.model.BroadcastResponse
 import me.linhvo.ittakestwo.model.Message
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlin.time.Clock
 
-class ChatRepository {
-    private val currentUserId = supabase.auth.currentSessionOrNull()?.user?.id ?: ""
-    private val pairingRepository = PairingRepository()
+@Singleton
+class ChatRepository @Inject constructor(
+    private val supabase: SupabaseClient,
+    private val pairingRepository: PairingRepository,
+) {
 
-    suspend fun getMessages(): List<Message> = withContext(Dispatchers.IO) {
+    suspend fun getMessages(userId: String): List<Message> = withContext(Dispatchers.IO) {
         supabase.from("chat_messages").select {
             filter {
                 or {
-                    eq("sender", currentUserId)
-                    eq("recipient", currentUserId)
+                    eq("sender", userId)
+                    eq("recipient", userId)
                 }
             }
             order(column = "sent_at", order = Order.DESCENDING)
         }.decodeList<Message>().map {
-            it.copy(isSenderMe = it.sender == currentUserId)
+            it.copy(isSenderMe = it.sender == userId)
         }
     }
 
     @OptIn(SupabaseExperimental::class)
-    fun getMessageStream(): Flow<Message> {
-        val channel = supabase.channel("chat:$currentUserId") { isPrivate = true }
+    fun getMessageStream(userId: String): Flow<Message> {
+        val channel = supabase.channel("chat:$userId") { isPrivate = true }
         return channelFlow {
             val changeFlow = channel.broadcastFlow<JsonObject>(event = "chat_message")
 
             changeFlow.onEach { payload ->
                 val res = Json.decodeFromJsonElement<BroadcastResponse>(payload)
                 val message = Json.decodeFromJsonElement<Message>(res.record).apply {
-                    isSenderMe = this.sender == currentUserId
+                    isSenderMe = this.sender == userId
                 }
 
 //                Log.d("debug_newMessageInRepo", message.toString())
@@ -57,20 +61,20 @@ class ChatRepository {
         }
     }
 
-    suspend fun addMessage(content: String) = withContext(Dispatchers.IO) {
+    suspend fun addMessage(userId: String, content: String) = withContext(Dispatchers.IO) {
         val message = Message(
-            sender = currentUserId,
-            recipient = pairingRepository.getPairing().getPartnerId(currentUserId)!!,
+            sender = userId,
+            recipient = pairingRepository.getPairing(userId).getPartnerId(userId)!!,
             content = content
         )
         supabase.from("chat_messages").insert(message)
     }
 
-    suspend fun getUnreadCount() = withContext(Dispatchers.IO) {
+    suspend fun getUnreadCount(userId: String) = withContext(Dispatchers.IO) {
         supabase.from("chat_messages").select {
             filter {
                 and {
-                    eq("recipient", currentUserId)
+                    eq("recipient", userId)
                     exact("read_at", null)
                 }
             }
@@ -78,15 +82,15 @@ class ChatRepository {
         }.countOrNull() ?: 0
     }
 
-    suspend fun updateReadTime() = withContext(Dispatchers.IO) {
-        if (getUnreadCount() > 0) {
+    suspend fun updateReadTime(userId: String) = withContext(Dispatchers.IO) {
+        if (getUnreadCount(userId) > 0) {
 //            Log.d("debug_readTime", "updating message read time to ${Clock.System.now()}")
             supabase.from("chat_messages").update({
                 set("read_at", Clock.System.now())
             }) {
                 filter {
                     and {
-                        eq("recipient", currentUserId)
+                        eq("recipient", userId)
                         exact("read_at", null)
                     }
                 }

@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.auth.exception.AuthRestException
 import io.github.jan.supabase.exceptions.RestException
 import kotlinx.coroutines.flow.*
@@ -12,8 +13,8 @@ import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
 import kotlinx.coroutines.launch
 import me.linhvo.ittakestwo.data.AuthRepository
 import me.linhvo.ittakestwo.data.PairingRepository
-import me.linhvo.ittakestwo.data.UserRepository
 import me.linhvo.ittakestwo.model.User
+import javax.inject.Inject
 
 data class HomeUiState(
     val user: User? = null,
@@ -23,18 +24,20 @@ data class HomeUiState(
     val shouldShowProfile: Boolean = false
 )
 
-class HomeViewModel : ViewModel() {
-    private val authRepository = AuthRepository()
-    private val userRepository = UserRepository()
-    private val pairingRepository = PairingRepository()
-
+@HiltViewModel
+class HomeViewModel @Inject constructor(
+    private val authRepository: AuthRepository,
+//    private val userRepository: UserRepository,
+    private val pairingRepository: PairingRepository
+) : ViewModel() {
+    private val _currentUserId = authRepository.currentUserId
     private val _errorMessage: MutableStateFlow<String?> = MutableStateFlow(null)
     private val _shouldShowProfile = MutableStateFlow(false)
     private val _backgroundImage: MutableStateFlow<String?> = MutableStateFlow(null)
 
     val uiState: StateFlow<HomeUiState> =
         combine(
-            pairingRepository.getProfileStream(),
+            pairingRepository.getProfileStream(_currentUserId!!),
             _errorMessage,
             _shouldShowProfile,
             _backgroundImage
@@ -72,7 +75,7 @@ class HomeViewModel : ViewModel() {
     fun addPartner(partnerEmail: String) {
         viewModelScope.launch {
             try {
-                pairingRepository.addPartner(partnerEmail)
+                pairingRepository.addPartner(userId = _currentUserId!!, partnerEmail = partnerEmail)
             } catch (e: Exception) {
                 _errorMessage.value = e.message
             }

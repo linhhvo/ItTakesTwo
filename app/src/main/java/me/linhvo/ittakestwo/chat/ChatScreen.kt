@@ -17,8 +17,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
@@ -27,8 +27,7 @@ import me.linhvo.ittakestwo.ui.components.Dialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatScreen(navigateToHome: () -> Unit) {
-    val viewModel: ChatViewModel = viewModel()
+fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () -> Unit) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 

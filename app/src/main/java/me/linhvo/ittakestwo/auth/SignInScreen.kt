@@ -21,16 +21,16 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import me.linhvo.ittakestwo.R
 import me.linhvo.ittakestwo.ui.components.Dialog
 
 @Composable
 fun SignInScreen(
+    viewModel: SignInViewModel = hiltViewModel(),
     onCreateAccountTextClick: () -> Unit
 ) {
-    val viewModel: SignInViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     if (uiState.errorMessage != null) {

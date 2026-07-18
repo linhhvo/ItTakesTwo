@@ -16,9 +16,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -34,12 +34,11 @@ import me.linhvo.ittakestwo.settings.SettingsScreen
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 //@Preview(showSystemUi = true)
 @Composable
-fun AppNavigation() {
+fun AppNavigation(viewModel: NavViewModel = hiltViewModel()) {
 
     val backStack = rememberNavBackStack(Route.Start)
-
-    val navViewModel: NavViewModel = viewModel()
-    val sessionStatus by navViewModel.sessionStatus.collectAsStateWithLifecycle()
+    val sessionStatus by viewModel.sessionStatus.collectAsStateWithLifecycle()
+    val unreadMessageCount by viewModel.unreadMessageCount.collectAsStateWithLifecycle()
 
     LaunchedEffect(sessionStatus) {
 //        Log.d("auth_session", sessionStatus.toString())

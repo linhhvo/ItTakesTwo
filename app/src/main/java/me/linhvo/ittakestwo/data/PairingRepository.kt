@@ -1,12 +1,10 @@
 package me.linhvo.ittakestwo.data
 
-import android.util.Log
+import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.annotations.SupabaseExperimental
-import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.realtime.broadcastFlow
 import io.github.jan.supabase.realtime.channel
-import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
@@ -17,10 +15,13 @@ import kotlinx.serialization.json.decodeFromJsonElement
 import me.linhvo.ittakestwo.model.BroadcastResponse
 import me.linhvo.ittakestwo.model.Pairing
 import me.linhvo.ittakestwo.model.User
-import kotlin.time.Duration.Companion.hours
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class PairingRepository {
-    private val currentUserId = supabase.auth.currentSessionOrNull()?.user?.id ?: ""
+@Singleton
+class PairingRepository @Inject constructor(
+    private val supabase: SupabaseClient,
+) {
 
     //TODO: keep track of when the background is updated and only get new url if changed
     suspend fun getBackgroundUrlFromNet(): String? = withContext(Dispatchers.IO) {
@@ -33,7 +34,7 @@ class PairingRepository {
         }
     }
 
-    suspend fun getPairing(userId: String = currentUserId): Pairing = withContext(Dispatchers.IO) {
+    suspend fun getPairing(userId: String): Pairing = withContext(Dispatchers.IO) {
         supabase.from("pairings").select {
             filter {
                 or {
@@ -45,8 +46,8 @@ class PairingRepository {
     }
 
     @OptIn(SupabaseExperimental::class)
-    fun getPairingStream(): Flow<Pairing> {
-        val channel = supabase.channel("pairing:$currentUserId") { isPrivate = true }
+    fun getPairingStream(userId: String): Flow<Pairing> {
+        val channel = supabase.channel("pairing:$userId") { isPrivate = true }
         return channelFlow {
             val changeFlow = channel.broadcastFlow<JsonObject>(event = "pairing_changes")
 
@@ -57,21 +58,21 @@ class PairingRepository {
                 send(Json.decodeFromJsonElement<Pairing>(res.record))
             }.launchIn(this)
         }.onStart {
-            emit(getPairing())
+            emit(getPairing(userId))
         }.onCompletion {
             channel.unsubscribe()
         }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun getProfileStream(): Flow<Pair<User, User?>> {
-        val userRepository = UserRepository()
-        val userFlow = userRepository.getUserStream(role = Role.USER, userId = currentUserId)
+    fun getProfileStream(userId: String): Flow<Pair<User, User?>> {
+        val userRepository = UserRepository(supabase)
+        val userFlow = userRepository.getUserStream(role = Role.USER, channelId = userId, userId = userId)
 
-        val partnerFlow = getPairingStream().flatMapLatest {
-            val partnerId = it.getPartnerId(currentUserId)
+        val partnerFlow = getPairingStream(userId).flatMapLatest {
+            val partnerId = it.getPartnerId(userId)
             if (partnerId != null) {
-                userRepository.getUserStream(role = Role.PARTNER, userId = partnerId)
+                userRepository.getUserStream(role = Role.PARTNER, channelId = userId, userId = partnerId)
             } else {
                 flowOf(null)
             }
@@ -82,10 +83,10 @@ class PairingRepository {
         }
     }
 
-    suspend fun getProfileInfo(): Pair<User, User?> {
-        val userRepository = UserRepository()
-        val user = userRepository.getUser(currentUserId)
-        val partnerId = getPairing().getPartnerId(currentUserId)
+    suspend fun getProfileInfo(userId: String): Pair<User, User?> {
+        val userRepository = UserRepository(supabase)
+        val user = userRepository.getUser(userId)
+        val partnerId = getPairing(userId).getPartnerId(userId)
         if (partnerId != null) {
             val partner = userRepository.getUser(userId = partnerId)
             return Pair(user, partner)
@@ -94,7 +95,7 @@ class PairingRepository {
         }
     }
 
-    suspend fun addPartner(partnerEmail: String) = withContext(Dispatchers.IO) {
+    suspend fun addPartner(userId: String, partnerEmail: String) = withContext(Dispatchers.IO) {
         val partnerId = supabase.from("users").select {
             filter { eq("email", partnerEmail) }
         }.decodeSingleOrNull<User>()?.id
@@ -105,7 +106,7 @@ class PairingRepository {
         supabase.from("pairings").update({
             set("partner_id", partnerId)
         }) {
-            filter { eq("user_id", currentUserId) }
+            filter { eq("user_id", userId) }
         }
     }
 

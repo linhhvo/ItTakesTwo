@@ -1,14 +1,11 @@
 package me.linhvo.ittakestwo.data
 
-import android.content.Context
-import android.net.Uri
 import android.util.Log
+import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.annotations.SupabaseExperimental
-import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.realtime.broadcastFlow
 import io.github.jan.supabase.realtime.channel
-import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
@@ -17,26 +14,24 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import me.linhvo.ittakestwo.model.BroadcastResponse
 import me.linhvo.ittakestwo.model.User
-import java.time.Instant
-import java.time.format.DateTimeFormatter
-import kotlin.time.Duration.Companion.hours
+import javax.inject.Inject
+import javax.inject.Singleton
 
 enum class Role(val text: String) {
     USER("user"),
     PARTNER("partner")
 }
 
-class UserRepository {
-    private val currentUserId = supabase.auth.currentSessionOrNull()?.user?.id ?: ""
-
+@Singleton
+class UserRepository @Inject constructor(val supabase: SupabaseClient) {
     suspend fun getUser(userId: String): User =
         supabase.from("users").select {
             filter { eq("id", userId) }
         }.decodeSingle<User>()
 
     @OptIn(SupabaseExperimental::class)
-    fun getUserStream(role: Role, userId: String): Flow<User> {
-        val channel = supabase.channel("${role.text}:$currentUserId") { isPrivate = true }
+    fun getUserStream(role: Role, channelId: String, userId: String): Flow<User> {
+        val channel = supabase.channel("${role.text}:$channelId") { isPrivate = true }
         return channelFlow {
             val changeFlow = channel.broadcastFlow<JsonObject>(event = "UPDATE")
 

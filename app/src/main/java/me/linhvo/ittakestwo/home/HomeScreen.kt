@@ -1,9 +1,7 @@
 package me.linhvo.ittakestwo.home
 
 import android.annotation.SuppressLint
-import android.util.Log
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -11,20 +9,17 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.layout.ContentScale.Companion.Crop
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
-import com.bumptech.glide.integration.compose.GlideImage
 import me.linhvo.ittakestwo.model.User
 import me.linhvo.ittakestwo.profile.AddPartnerDialog
 import me.linhvo.ittakestwo.profile.ProfileDialog
@@ -32,8 +27,7 @@ import me.linhvo.ittakestwo.ui.components.Dialog
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
-fun HomeScreen() {
-    val viewModel: HomeViewModel = viewModel()
+fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
@@ -94,13 +88,6 @@ fun HomeContent(
                 .background(color = backgroundColor)
         )
     }
-//    Image(
-//        painter = painterResource(R.drawable.home_image),
-//        contentDescription = null,
-//        alpha = 0.5f,
-//        contentScale = Crop,
-//        modifier = Modifier.fillMaxSize(),
-//    )
 
     Row(
         modifier = Modifier
