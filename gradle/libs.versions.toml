@@ -25,10 +25,14 @@ nav3Core = "1.1.2"
 lifecycleViewmodelNav3 = "2.10.0"
 kotlinxSerializationCore = "1.11.0"
 foundation = "1.11.3"
+room = "3.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleRuntimeKtx" }
+androidx-room3-runtime = { module = "androidx.room3:room3-runtime", version.ref = "room" }
+androidx-room3-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room" }
+#androidx-room3-ktx = { module = "androidx.room3:room3-ktx", version.ref = "room" }
 glide-compose = { module = "com.github.bumptech.glide:compose", version.ref = "glideCompose" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
