@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerializationException
-import me.linhvo.ittakestwo.data.AuthRepository
+import me.linhvo.ittakestwo.repository.AuthRepository
 import javax.inject.Inject
 
 data class SignUpUiState(

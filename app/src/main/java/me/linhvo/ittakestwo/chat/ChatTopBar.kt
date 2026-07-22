@@ -13,7 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import me.linhvo.ittakestwo.R
-import me.linhvo.ittakestwo.model.User
+import me.linhvo.ittakestwo.database.model.User
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

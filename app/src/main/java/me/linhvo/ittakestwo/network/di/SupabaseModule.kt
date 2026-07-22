@@ -1,4 +1,4 @@
-package me.linhvo.ittakestwo.di
+package me.linhvo.ittakestwo.network.di
 
 import dagger.Module
 import dagger.Provides

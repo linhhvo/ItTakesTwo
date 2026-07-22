@@ -8,12 +8,16 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.auth.exception.AuthRestException
 import io.github.jan.supabase.exceptions.RestException
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import me.linhvo.ittakestwo.data.AuthRepository
-import me.linhvo.ittakestwo.data.PairingRepository
-import me.linhvo.ittakestwo.model.User
+import me.linhvo.ittakestwo.database.model.User
+import me.linhvo.ittakestwo.repository.AuthRepository
+import me.linhvo.ittakestwo.repository.PairingRepository
+import me.linhvo.ittakestwo.repository.UserRepository
 import javax.inject.Inject
 
 data class HomeUiState(
@@ -27,7 +31,7 @@ data class HomeUiState(
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-//    private val userRepository: UserRepository,
+    private val userRepository: UserRepository,
     private val pairingRepository: PairingRepository
 ) : ViewModel() {
     private val _currentUserId = authRepository.currentUserId
@@ -37,21 +41,23 @@ class HomeViewModel @Inject constructor(
 
     val uiState: StateFlow<HomeUiState> =
         combine(
-            pairingRepository.getProfileStream(_currentUserId!!),
+//            pairingNetworkDataSource.getProfileStream(_currentUserId!!),
+            userRepository.getUserStream(_currentUserId),
             _errorMessage,
             _shouldShowProfile,
             _backgroundImage
         )
-        { (user, partner), errorMessage, shouldShowProfile, backgroundImage ->
+        { /*(user, partner)*/ user, errorMessage, shouldShowProfile, backgroundImage ->
             HomeUiState(
                 user = user,
-                partner = partner,
+//                partner = partner,
+//                partner = null,
                 backgroundImageUrl = backgroundImage,
                 errorMessage = errorMessage,
                 shouldShowProfile = shouldShowProfile
             )
-        }.catch {
-            emit(HomeUiState(errorMessage = it.message))
+//        }.catch {
+//            emit(HomeUiState(errorMessage = it.message))
         }.stateIn(
             scope = viewModelScope,
             started = WhileSubscribed(5000),
@@ -75,7 +81,7 @@ class HomeViewModel @Inject constructor(
     fun addPartner(partnerEmail: String) {
         viewModelScope.launch {
             try {
-                pairingRepository.addPartner(userId = _currentUserId!!, partnerEmail = partnerEmail)
+//                pairingNetworkDataSource.addPartner(userId = _currentUserId!!, partnerEmail = partnerEmail)
             } catch (e: Exception) {
                 _errorMessage.value = e.message
             }
@@ -85,7 +91,7 @@ class HomeViewModel @Inject constructor(
     fun uploadAvatar(context: Context, avatarUri: Uri) {
         viewModelScope.launch {
             try {
-                userRepository.uploadUserAvatar(context, avatarUri)
+//                userRepository.uploadUserAvatar(context, avatarUri)
             } catch (e: Exception) {
                 if (e !is IllegalStateException) {
                     _errorMessage.value = e.message
@@ -108,11 +114,23 @@ class HomeViewModel @Inject constructor(
         _shouldShowProfile.value = false
     }
 
-    fun getBackground() {
-        Log.d("debug_background", "get background...")
+//    fun getBackground() {
+//        Log.d("debug_background", "get background...")
+//        viewModelScope.launch {
+//            _backgroundImage.value = pairingRepository.getBackgroundUrlFromNet()
+//        }
+//    }
+
+    init {
+        Log.d("debug_VM", "home VM init")
         viewModelScope.launch {
-            _backgroundImage.value = pairingRepository.getBackgroundUrlFromNet()
+            userRepository.syncUsers(authRepository.currentUserId)
+            pairingRepository.syncPairing(authRepository.currentUserId)
         }
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        Log.d("debug_VM", "home VM clear")
+    }
 }

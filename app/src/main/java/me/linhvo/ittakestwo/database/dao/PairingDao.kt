@@ -1,15 +1,19 @@
 package me.linhvo.ittakestwo.database.dao
 
+import androidx.room3.Dao
 import androidx.room3.Query
-import androidx.room3.Update
+import androidx.room3.Upsert
 import kotlinx.coroutines.flow.Flow
 import me.linhvo.ittakestwo.database.model.Pairing
 
+@Dao
 interface PairingDao {
     @Query("select * from pairing")
-    fun loadPairing(): Flow<Pairing>
+    fun getPairing(): Pairing?
 
-    @Update
-    suspend fun update(pairing: Pairing)
+    @Query("select * from pairing")
+    fun observePairing(): Flow<Pairing?>
 
+    @Upsert
+    suspend fun upsert(pairing: Pairing)
 }

@@ -1,5 +1,6 @@
-package me.linhvo.ittakestwo.data
+package me.linhvo.ittakestwo.network.datasource
 
+import android.util.Log
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.annotations.SupabaseExperimental
 import io.github.jan.supabase.postgrest.from
@@ -13,19 +14,19 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
-import me.linhvo.ittakestwo.model.BroadcastResponse
-import me.linhvo.ittakestwo.model.Message
+import me.linhvo.ittakestwo.network.model.BroadcastResponse
+import me.linhvo.ittakestwo.network.model.NetworkMessage
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Clock
 
 @Singleton
-class ChatRepository @Inject constructor(
+class MessageNetworkDataSource @Inject constructor(
     private val supabase: SupabaseClient,
-    private val pairingRepository: PairingRepository,
+    private val pairingNetworkDataSource: PairingNetworkDataSource,
 ) {
 
-    suspend fun getMessages(userId: String): List<Message> = withContext(Dispatchers.IO) {
+    suspend fun getMessages(userId: String): List<NetworkMessage> = withContext(Dispatchers.IO) {
         supabase.from("chat_messages").select {
             filter {
                 or {
@@ -34,22 +35,18 @@ class ChatRepository @Inject constructor(
                 }
             }
             order(column = "sent_at", order = Order.DESCENDING)
-        }.decodeList<Message>().map {
-            it.copy(isSenderMe = it.sender == userId)
-        }
+        }.decodeList<NetworkMessage>()
     }
 
     @OptIn(SupabaseExperimental::class)
-    fun getMessageStream(userId: String): Flow<Message> {
+    fun getMessageStream(userId: String): Flow<NetworkMessage> {
         val channel = supabase.channel("chat:$userId") { isPrivate = true }
         return channelFlow {
             val changeFlow = channel.broadcastFlow<JsonObject>(event = "chat_message")
 
             changeFlow.onEach { payload ->
                 val res = Json.decodeFromJsonElement<BroadcastResponse>(payload)
-                val message = Json.decodeFromJsonElement<Message>(res.record).apply {
-                    isSenderMe = this.sender == userId
-                }
+                val message = Json.decodeFromJsonElement<NetworkMessage>(res.record)
 
 //                Log.d("debug_newMessageInRepo", message.toString())
                 send(message)
@@ -58,13 +55,15 @@ class ChatRepository @Inject constructor(
             channel.subscribe(blockUntilSubscribed = true)
         }.onCompletion {
             channel.unsubscribe()
+            Log.d("debug_channel", "channel unsubscribed")
         }
     }
 
     suspend fun addMessage(userId: String, content: String) = withContext(Dispatchers.IO) {
-        val message = Message(
+        val message = NetworkMessage(
             sender = userId,
-            recipient = pairingRepository.getPairing(userId).getPartnerId(userId)!!,
+//            recipient = pairingNetworkDataSource.getPairing(userId).getPartnerId(userId)!!,
+            recipient = pairingNetworkDataSource.getPairing(userId).partnerId!!,
             content = content
         )
         supabase.from("chat_messages").insert(message)

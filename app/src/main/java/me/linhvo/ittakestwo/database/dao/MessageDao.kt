@@ -1,10 +1,12 @@
 package me.linhvo.ittakestwo.database.dao
 
+import androidx.room3.Dao
 import androidx.room3.Insert
 import androidx.room3.Query
 import kotlinx.coroutines.flow.Flow
 import me.linhvo.ittakestwo.database.model.Message
 
+@Dao
 interface MessageDao {
     @Query(
         """
@@ -12,7 +14,7 @@ interface MessageDao {
         order by sentAt desc
     """
     )
-    fun loadMessagesOrderByLatest(): Flow<List<Message>>
+    fun observeMessagesOrderByLatest(): Flow<List<Message>>
 
     @Insert
     suspend fun insert(message: Message)
@@ -31,5 +33,5 @@ interface MessageDao {
         where recipientId = :userId and readAt is null
     """
     )
-    suspend fun getUnreadCount(userId: String)
+    suspend fun getUnreadCount(userId: String): Int
 }

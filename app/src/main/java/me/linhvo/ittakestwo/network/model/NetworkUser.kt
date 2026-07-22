@@ -1,15 +1,17 @@
-package me.linhvo.ittakestwo.model
+package me.linhvo.ittakestwo.network.model
 
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonIgnoreUnknownKeys
 import kotlinx.serialization.json.JsonObject
+import me.linhvo.ittakestwo.database.model.User
+import kotlin.time.Instant
 
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
 @JsonIgnoreUnknownKeys
-data class User(
+data class NetworkUser(
     val id: String,
     val email: String,
 
@@ -20,36 +22,17 @@ data class User(
     val avatarFile: String? = null,
 
     @SerialName("updated_at")
-    val updatedAt: String,
+    val updatedAt: Instant,
 
-    private var avatarUrl: String? = null
-) {
-    fun getInitial(): String = displayName.first().toString().uppercase()
-    fun setAvatarUrl(url: String?) {
-        avatarUrl = url
-    }
+    )
 
-    fun getAvatarUrl() = avatarUrl
-}
-
-@OptIn(ExperimentalSerializationApi::class)
-@Serializable
-@JsonIgnoreUnknownKeys
-data class Pairing(
-    val id: String? = null,
-
-    @SerialName("user_id")
-    val userId: String,
-
-    @SerialName("partner_id")
-    val partnerId: String? = null
-) {
-    fun getPartnerId(currentUser: String): String? =
-        if (currentUser == userId) partnerId
-        else if (partnerId != null) userId
-        else null
-
-}
+fun NetworkUser.toDomainModel() = User(
+    id = id,
+    email = email,
+    displayName = displayName,
+    avatarFile = avatarFile,
+    updatedAt = updatedAt.toEpochMilliseconds()
+)
 
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable

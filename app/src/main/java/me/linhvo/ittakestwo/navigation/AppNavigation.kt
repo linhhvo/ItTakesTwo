@@ -32,16 +32,12 @@ import me.linhvo.ittakestwo.home.HomeScreen
 import me.linhvo.ittakestwo.settings.SettingsScreen
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-//@Preview(showSystemUi = true)
 @Composable
 fun AppNavigation(viewModel: NavViewModel = hiltViewModel()) {
-
     val backStack = rememberNavBackStack(Route.Start)
     val sessionStatus by viewModel.sessionStatus.collectAsStateWithLifecycle()
-    val unreadMessageCount by viewModel.unreadMessageCount.collectAsStateWithLifecycle()
 
     LaunchedEffect(sessionStatus) {
-//        Log.d("auth_session", sessionStatus.toString())
         when (sessionStatus) {
             is SessionStatus.Authenticated -> {
                 if (backStack.last() is Route.InitialRoute) {

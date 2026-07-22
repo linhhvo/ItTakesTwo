@@ -8,11 +8,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import me.linhvo.ittakestwo.data.AuthRepository
-import me.linhvo.ittakestwo.data.ChatRepository
-import me.linhvo.ittakestwo.data.PairingRepository
-import me.linhvo.ittakestwo.model.Message
-import me.linhvo.ittakestwo.model.User
+import me.linhvo.ittakestwo.database.model.Message
+import me.linhvo.ittakestwo.database.model.User
+import me.linhvo.ittakestwo.network.datasource.MessageNetworkDataSource
+import me.linhvo.ittakestwo.network.datasource.PairingNetworkDataSource
+import me.linhvo.ittakestwo.repository.AuthRepository
 import javax.inject.Inject
 
 data class ChatUiState(
@@ -26,8 +26,8 @@ data class ChatUiState(
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     authRepository: AuthRepository,
-    private val pairingRepository: PairingRepository,
-    private val chatRepository: ChatRepository,
+    private val pairingNetworkDataSource: PairingNetworkDataSource,
+    private val messageNetworkDataSource: MessageNetworkDataSource,
 ) : ViewModel() {
     private val _currentUserId = authRepository.currentUserId
     private val _uiState = MutableStateFlow(ChatUiState())
@@ -39,10 +39,9 @@ class ChatViewModel @Inject constructor(
 
     fun sendMessage() {
         viewModelScope.launch {
-            val cleanInput = _uiState.value.userInput.trim()
-            if (cleanInput.isNotEmpty()) {
+            if (_uiState.value.userInput.isNotBlank()) {
                 try {
-                    chatRepository.addMessage(userId = _currentUserId!!, content = cleanInput)
+                    messageNetworkDataSource.addMessage(userId = _currentUserId!!, content = _uiState.value.userInput)
                 } catch (e: Exception) {
                     _uiState.update { it.copy(errorMessage = e.message) }
                 }
@@ -57,7 +56,7 @@ class ChatViewModel @Inject constructor(
 
     fun markAsRead() {
         viewModelScope.launch {
-            chatRepository.updateReadTime(_currentUserId!!)
+            messageNetworkDataSource.updateReadTime(_currentUserId!!)
         }
     }
 
@@ -65,26 +64,26 @@ class ChatViewModel @Inject constructor(
         Log.d("debug_VM", "chat VM init")
         viewModelScope.launch {
             if (_currentUserId != null) {
-                val users = pairingRepository.getProfileInfo(_currentUserId)
-                val messages = chatRepository.getMessages(_currentUserId)
+                val users = pairingNetworkDataSource.getProfileInfo(_currentUserId)
+                val messages = messageNetworkDataSource.getMessages(_currentUserId)
 
-                _uiState.update { it.copy(user = users.first, partner = users.second, chatMessages = messages) }
+//                _uiState.update { it.copy(user = users.first, partner = users.second, chatMessages = messages) }
             } else {
                 _uiState.update { it.copy(errorMessage = "unable to get user ID") }
             }
         }
 
         viewModelScope.launch {
-            chatRepository.getMessageStream(_currentUserId!!).collect { message ->
+            messageNetworkDataSource.getMessageStream(_currentUserId!!).collect { message ->
 //                Log.d("debug_newMessage", message.toString())
                 val newList = _uiState.value.chatMessages.toMutableList()
                 val existingMessageInd = newList.indexOfFirst { it.id == message.id }
 
                 if (existingMessageInd != -1) {
                     newList.removeAt(existingMessageInd)
-                    newList.add(existingMessageInd, message)
+//                    newList.add(existingMessageInd, message)
                 } else {
-                    newList.add(0, message)
+//                    newList.add(0, message)
                 }
 
                 _uiState.update { it.copy(chatMessages = newList) }

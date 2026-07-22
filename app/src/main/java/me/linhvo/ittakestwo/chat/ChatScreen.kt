@@ -22,7 +22,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
-import me.linhvo.ittakestwo.model.Message
+import me.linhvo.ittakestwo.database.model.Message
+import me.linhvo.ittakestwo.database.util.parseDateTimeToLocalTZ
 import me.linhvo.ittakestwo.ui.components.Dialog
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -103,13 +104,13 @@ fun ChatContent(messages: List<Message>, markAsRead: () -> Unit, modifier: Modif
         itemsIndexed(
             items = messages, key = { _, message -> message.id!! }) { index, currentMessage ->
             val prevMessage = messages.getOrNull(index + 1)
-            val isPrevMessageBySameSender = prevMessage?.sender == currentMessage.sender
+            val isPrevMessageBySameSender = prevMessage?.senderId == currentMessage.senderId
 
-            val currentMessageSentAt = currentMessage.parseDateTime(currentMessage.sentAt!!)
+            val currentMessageSentAt = parseDateTimeToLocalTZ(currentMessage.sentAt!!)
 
             Column {
                 if (prevMessage == null
-                    || currentMessageSentAt.date > prevMessage.parseDateTime(prevMessage.sentAt!!).date
+                    || currentMessageSentAt.date > parseDateTimeToLocalTZ(prevMessage.sentAt!!).date
                 ) {
                     HorizontalDivider(
                         color = MaterialTheme.colorScheme.outline.copy(alpha = .5f),

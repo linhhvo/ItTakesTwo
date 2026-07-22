@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
-import me.linhvo.ittakestwo.model.User
+import me.linhvo.ittakestwo.database.model.User
 import me.linhvo.ittakestwo.profile.AddPartnerDialog
 import me.linhvo.ittakestwo.profile.ProfileDialog
 import me.linhvo.ittakestwo.ui.components.Dialog
@@ -30,9 +30,9 @@ import me.linhvo.ittakestwo.ui.components.Dialog
 fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) {
-        viewModel.getBackground()
-    }
+//    LaunchedEffect(Unit) {
+//        viewModel.getBackground()
+//    }
 
     if (uiState.errorMessage != null) {
         Dialog(errorMessage = uiState.errorMessage!!, onDismissRequest = viewModel::resetErrorMessage)
@@ -74,13 +74,13 @@ fun HomeContent(
     val backgroundColor = MaterialTheme.colorScheme.surface
 
     if (backgroundImageUrl != null) {
-        GlideImage(
-            model = backgroundImageUrl,
-            contentDescription = "background image",
-            contentScale = Crop,
-            alpha = 0.5f,
-            modifier = Modifier.fillMaxSize()
-        )
+//        GlideImage(
+//            model = backgroundImageUrl,
+//            contentDescription = "background image",
+//            contentScale = Crop,
+//            alpha = 0.5f,
+//            modifier = Modifier.fillMaxSize()
+//        )
     } else {
         Box(
             modifier = Modifier
@@ -110,7 +110,7 @@ fun HomeContent(
                         .background(backgroundColor)
                 ) {
                     Text(
-                        text = partner?.getInitial() ?: "",
+                        text = partner?.initial ?: "",
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
@@ -122,17 +122,16 @@ fun HomeContent(
                     )
                 }
             } else {
-                Log.d("debug_profile", partner.getAvatarUrl().toString())
-                GlideImage(
-                    model = partner.getAvatarUrl(),
-                    contentDescription = "user avatar",
-                    contentScale = Crop,
-                    modifier = Modifier
-                        .offset(x = 40.dp)
-                        .size(55.dp)
-                        .clip(CircleShape)
-                        .border(width = 1.5.dp, color = MaterialTheme.colorScheme.background, shape = CircleShape)
-                )
+//                GlideImage(
+//                    model = partner.getAvatarUrl(),
+//                    contentDescription = "user avatar",
+//                    contentScale = Crop,
+//                    modifier = Modifier
+//                        .offset(x = 40.dp)
+//                        .size(55.dp)
+//                        .clip(CircleShape)
+//                        .border(width = 1.5.dp, color = MaterialTheme.colorScheme.background, shape = CircleShape)
+//                )
             }
 
             // user's profile picture
@@ -144,7 +143,7 @@ fun HomeContent(
                         .background(backgroundColor)
                 ) {
                     Text(
-                        text = user?.getInitial() ?: "",
+                        text = user?.initial ?: "",
                         color = MaterialTheme.colorScheme.onPrimary,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
@@ -156,15 +155,15 @@ fun HomeContent(
                     )
                 }
             } else {
-                GlideImage(
-                    model = user.getAvatarUrl(),
-                    contentDescription = "user avatar",
-                    contentScale = Crop,
-                    modifier = Modifier
-                        .size(55.dp)
-                        .clip(CircleShape)
-                        .border(width = 1.5.dp, color = MaterialTheme.colorScheme.background, shape = CircleShape)
-                )
+//                GlideImage(
+//                    model = user.getAvatarUrl(),
+//                    contentDescription = "user avatar",
+//                    contentScale = Crop,
+//                    modifier = Modifier
+//                        .size(55.dp)
+//                        .clip(CircleShape)
+//                        .border(width = 1.5.dp, color = MaterialTheme.colorScheme.background, shape = CircleShape)
+//                )
             }
         }
 

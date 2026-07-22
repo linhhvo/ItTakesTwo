@@ -20,7 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale.Companion.Crop
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -31,9 +30,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
-import com.bumptech.glide.integration.compose.GlideImage
 import me.linhvo.ittakestwo.R
-import me.linhvo.ittakestwo.model.User
+import me.linhvo.ittakestwo.database.model.User
 
 data class Event(
     val iconId: Int,
@@ -58,7 +56,7 @@ fun ProfileDialog(
     val pickMedia = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) {
             Log.d("debug", uri.toString())
-            uploadAvatar(context, uri)
+//            uploadAvatar(context, uri)
 
         } else {
             Log.d("debug", "no media selected")
@@ -154,7 +152,7 @@ fun ProfileCard(
                     .clickable(enabled = true, onClick = { onAvatarClick() })
             ) {
                 Text(
-                    text = user?.getInitial() ?: "",
+                    text = user?.initial ?: "",
                     color = textColor,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -163,15 +161,15 @@ fun ProfileCard(
                 )
             }
         } else {
-            GlideImage(
-                model = user.getAvatarUrl(),
-                contentDescription = "user avatar",
-                contentScale = Crop,
-                modifier = Modifier
-                    .size(70.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .clickable(enabled = true, onClick = { onAvatarClick() })
-            )
+//            GlideImage(
+//                model = user.getAvatarUrl(),
+//                contentDescription = "user avatar",
+//                contentScale = Crop,
+//                modifier = Modifier
+//                    .size(70.dp)
+//                    .clip(RoundedCornerShape(10.dp))
+//                    .clickable(enabled = true, onClick = { onAvatarClick() })
+//            )
         }
 
         Text(text = user?.displayName ?: "", fontSize = 18.sp, modifier = Modifier.padding(top = 10.dp))

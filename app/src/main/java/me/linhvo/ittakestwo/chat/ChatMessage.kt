@@ -17,7 +17,8 @@ import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import me.linhvo.ittakestwo.R
-import me.linhvo.ittakestwo.model.Message
+import me.linhvo.ittakestwo.database.model.Message
+import me.linhvo.ittakestwo.database.util.parseDateTimeToLocalTZ
 
 @Composable
 fun Message(
@@ -33,7 +34,7 @@ fun Message(
                 .fillMaxWidth()
                 .padding(bottom = 5.dp)
         ) {
-            val timestamp = message.parseDateTime(message.sentAt!!)
+            val timestamp = parseDateTimeToLocalTZ(message.sentAt!!)
             val iconTint =
                 if (message.readAt != null) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.tertiaryContainer
             Icon(
@@ -92,7 +93,7 @@ fun Message(
                     .widthIn(max = (screenWidth * 0.75).dp)
             )
 
-            val timestamp = message.parseDateTime(message.sentAt!!)
+            val timestamp = parseDateTimeToLocalTZ(message.sentAt!!)
             Text(
                 text = "${"%02d".format(timestamp.hour)}:${"%02d".format(timestamp.minute)}",
                 fontSize = 9.sp,

@@ -1,17 +1,27 @@
 package me.linhvo.ittakestwo.navigation
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import me.linhvo.ittakestwo.data.AuthRepository
-import me.linhvo.ittakestwo.data.ChatRepository
+import kotlinx.coroutines.launch
+import me.linhvo.ittakestwo.repository.AuthRepository
 import javax.inject.Inject
 
 @HiltViewModel
 class NavViewModel @Inject constructor(
     authRepository: AuthRepository,
-    private val chatRepository: ChatRepository,
 ) : ViewModel() {
-    val sessionStatus = authRepository.getSession()
+    val sessionStatus = authRepository.sessionStatus
+
+    init {
+        viewModelScope.launch {
+            Log.d("debug_VM", "nav VM init")
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.d("debug_VM", "nav VM clear")
+    }
 }
