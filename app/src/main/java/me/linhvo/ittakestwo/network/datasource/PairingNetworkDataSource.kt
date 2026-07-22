@@ -55,7 +55,8 @@ class PairingNetworkDataSource @Inject constructor(
 
             changeFlow.onEach { payload ->
                 val res = Json.decodeFromJsonElement<BroadcastResponse>(payload)
-                emit(Json.decodeFromJsonElement<NetworkPairing>(res.record))
+                val pairing = Json.decodeFromJsonElement<NetworkPairing>(res.record)
+                emit(pairing)
             }.collect()
         }.onCompletion {
             channel.unsubscribe()
@@ -95,19 +96,21 @@ class PairingNetworkDataSource @Inject constructor(
         }
     }
 
-    suspend fun addPartner(userId: String, partnerEmail: String) = withContext(Dispatchers.IO) {
-        val partnerId = supabase.from("users").select {
+    suspend fun addPartner(userId: String, partnerEmail: String): NetworkUser {
+        val partner = supabase.from("users").select {
             filter { eq("email", partnerEmail) }
-        }.decodeSingleOrNull<NetworkUser>()?.id
-        if (partnerId == null) {
+        }.decodeSingleOrNull<NetworkUser>()
+        if (partner == null) {
             throw Exception("No account exists for this email.")
         }
 
         supabase.from("pairings").update({
-            set("partner_id", partnerId)
+            set("partner_id", partner.id)
         }) {
             filter { eq("user_id", userId) }
         }
+
+        return partner
     }
 
 }

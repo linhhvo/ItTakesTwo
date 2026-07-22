@@ -8,11 +8,8 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.auth.exception.AuthRestException
 import io.github.jan.supabase.exceptions.RestException
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.linhvo.ittakestwo.database.model.User
 import me.linhvo.ittakestwo.repository.AuthRepository
@@ -41,23 +38,21 @@ class HomeViewModel @Inject constructor(
 
     val uiState: StateFlow<HomeUiState> =
         combine(
-//            pairingNetworkDataSource.getProfileStream(_currentUserId!!),
-            userRepository.getUserStream(_currentUserId),
+            pairingRepository.getUserPairStream(_currentUserId),
             _errorMessage,
             _shouldShowProfile,
             _backgroundImage
         )
-        { /*(user, partner)*/ user, errorMessage, shouldShowProfile, backgroundImage ->
+        { userPair, errorMessage, shouldShowProfile, backgroundImage ->
             HomeUiState(
-                user = user,
-//                partner = partner,
-//                partner = null,
+                user = userPair.first,
+                partner = userPair.second,
                 backgroundImageUrl = backgroundImage,
                 errorMessage = errorMessage,
                 shouldShowProfile = shouldShowProfile
             )
-//        }.catch {
-//            emit(HomeUiState(errorMessage = it.message))
+        }.catch {
+            emit(HomeUiState(errorMessage = it.message))
         }.stateIn(
             scope = viewModelScope,
             started = WhileSubscribed(5000),
@@ -81,7 +76,7 @@ class HomeViewModel @Inject constructor(
     fun addPartner(partnerEmail: String) {
         viewModelScope.launch {
             try {
-//                pairingNetworkDataSource.addPartner(userId = _currentUserId!!, partnerEmail = partnerEmail)
+                pairingRepository.addPartner(userId = _currentUserId, partnerEmail = partnerEmail)
             } catch (e: Exception) {
                 _errorMessage.value = e.message
             }
@@ -124,8 +119,10 @@ class HomeViewModel @Inject constructor(
     init {
         Log.d("debug_VM", "home VM init")
         viewModelScope.launch {
-            userRepository.syncUsers(authRepository.currentUserId)
-            pairingRepository.syncPairing(authRepository.currentUserId)
+            userRepository.syncUsersFromNetwork(authRepository.currentUserId)
+        }
+        viewModelScope.launch {
+            pairingRepository.syncPairingFromNetwork(authRepository.currentUserId)
         }
     }
 

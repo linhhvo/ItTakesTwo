@@ -43,7 +43,6 @@ class SignInViewModel @Inject constructor(
 
                 dataSync.initializeData(authRepository.currentUserId)
             } catch (e: Exception) {
-
                 _uiState.update { state ->
                     state.copy(
                         errorMessage = when (e) {
@@ -63,11 +62,11 @@ class SignInViewModel @Inject constructor(
     }
 
     init {
-        Log.d("view_model", "sign in VM started")
+        Log.d("debug_VM", "sign in VM started")
     }
 
     override fun onCleared() {
         super.onCleared()
-        Log.d("view_model", "sign in VM cleared")
+        Log.d("debug_VM", "sign in VM cleared")
     }
 }

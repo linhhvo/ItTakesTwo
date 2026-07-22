@@ -1,6 +1,5 @@
 package me.linhvo.ittakestwo.repository
 
-import android.util.Log
 import kotlinx.coroutines.flow.Flow
 import me.linhvo.ittakestwo.database.dao.UserDao
 import me.linhvo.ittakestwo.database.model.User
@@ -16,14 +15,15 @@ class UserRepository @Inject constructor(
 ) {
     suspend fun getUser(userId: String): User = userDao.loadUser(userId)
 
+    suspend fun upsert(user: User) = userDao.upsert(user)
+
     fun getUserStream(userId: String): Flow<User?> = userDao.observeUser(userId)
 
 //    suspend fun uploadUserAvatar(context: Context, avatarUri) {
 //    }
 
-    suspend fun syncUsers(currentUser: String) {
+    suspend fun syncUsersFromNetwork(currentUser: String) {
         userNetworkDataSource.getUserStream(currentUser).collect {
-            Log.d("debug_user", it.toString())
             userDao.upsert(it.toDomainModel())
         }
     }
