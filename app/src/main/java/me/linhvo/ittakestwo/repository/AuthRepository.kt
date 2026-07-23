@@ -29,7 +29,7 @@ class AuthRepository @Inject constructor(
                 ?: throw IllegalStateException("Cannot get current session user ID"),
             email = email,
             displayName = name,
-            updatedAt = Clock.System.now().toEpochMilliseconds()
+            updatedAt = Clock.System.now()
         )
         userDao.upsert(newUser)
     }

@@ -1,5 +1,7 @@
 package me.linhvo.ittakestwo.database
 
+import androidx.room3.ColumnTypeConverter
+import androidx.room3.ColumnTypeConverters
 import androidx.room3.Database
 import androidx.room3.RoomDatabase
 import me.linhvo.ittakestwo.database.dao.MessageDao
@@ -8,6 +10,7 @@ import me.linhvo.ittakestwo.database.dao.UserDao
 import me.linhvo.ittakestwo.database.model.Message
 import me.linhvo.ittakestwo.database.model.Pairing
 import me.linhvo.ittakestwo.database.model.User
+import kotlin.time.Instant
 
 @Database(
     entities = [
@@ -17,8 +20,20 @@ import me.linhvo.ittakestwo.database.model.User
     ],
     version = 1
 )
+
+@ColumnTypeConverters(Converters::class)
 abstract class LocalDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun pairingDao(): PairingDao
     abstract fun messageDao(): MessageDao
+}
+
+internal class Converters {
+    @ColumnTypeConverter
+    fun longToInstant(value: Long?): Instant? =
+        value?.let(Instant::fromEpochMilliseconds)
+
+    @ColumnTypeConverter
+    fun instantToLong(value: Instant?): Long? =
+        value?.toEpochMilliseconds()
 }

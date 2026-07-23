@@ -4,5 +4,5 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Instant
 
-fun parseDateTimeToLocalTZ(milliseconds: Long) =
-    Instant.fromEpochMilliseconds(milliseconds).toLocalDateTime(TimeZone.currentSystemDefault())
+fun parseDateTimeToLocalTZ(instant: Instant) =
+    instant.toLocalDateTime(TimeZone.currentSystemDefault())

@@ -31,7 +31,7 @@ fun NetworkUser.toDomainModel() = User(
     email = email,
     displayName = displayName,
     avatarFile = avatarFile,
-    updatedAt = updatedAt.toEpochMilliseconds()
+    updatedAt = updatedAt
 )
 
 @OptIn(ExperimentalSerializationApi::class)
