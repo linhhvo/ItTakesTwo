@@ -24,22 +24,20 @@ class DataSyncRepository @Inject constructor(
         applicationScope.launch {
             try {
                 // fetch current user and insert into Room
-                userNetworkDataSource.getUser(currentUser).toDomainModel().let {
+                userNetworkDataSource.getUser(currentUser)?.toDomainModel()?.let {
                     userDao.upsert(it)
                 }
 
                 // fetch current user's pairing and insert into Room
                 // if partner is already added, fetch partner info and insert into Room
-                pairingNetworkDataSource.getPairing(currentUser).toDomainModel(currentUser).let { pairing ->
+                pairingNetworkDataSource.getPairing(currentUser)?.toDomainModel(currentUser)?.let { pairing ->
                     pairingDao.upsert(pairing)
-                    if (pairing.partnerId != null) {
-                        userNetworkDataSource.getUser(pairing.partnerId).toDomainModel().let {
-                            userDao.upsert(it)
-                        }
+                    userNetworkDataSource.getUser(pairing.partnerId)?.toDomainModel()?.let {
+                        userDao.upsert(it)
                     }
                 }
             } catch (e: Exception) {
-                Log.d("debug_initializeData", e.message.toString())
+                Log.d("debug_initializeData", e.toString())
             }
         }
     }

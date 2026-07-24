@@ -62,8 +62,7 @@ class MessageNetworkDataSource @Inject constructor(
     suspend fun addMessage(userId: String, content: String) = withContext(Dispatchers.IO) {
         val message = NetworkMessage(
             sender = userId,
-//            recipient = pairingNetworkDataSource.getPairing(userId).getPartnerId(userId)!!,
-            recipient = pairingNetworkDataSource.getPairing(userId).partnerId!!,
+            recipient = pairingNetworkDataSource.getPairing(userId)!!.partnerId,
             content = content
         )
         supabase.from("chat_messages").insert(message)

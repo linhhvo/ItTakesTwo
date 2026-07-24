@@ -32,7 +32,10 @@ class AuthNetworkDataSource @Inject constructor(private val supabase: SupabaseCl
 
     fun getSession(): StateFlow<SessionStatus> = supabase.auth.sessionStatus
 
-    val currentUserId: String?
+    val currentUser
+        get() = supabase.auth.currentSessionOrNull()?.user
+
+    val currentUserId
         get() = supabase.auth.currentSessionOrNull()?.user?.id
 
 }

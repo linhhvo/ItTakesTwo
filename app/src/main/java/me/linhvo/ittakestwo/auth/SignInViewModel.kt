@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerializationException
-import me.linhvo.ittakestwo.database.DataSyncRepository
 import me.linhvo.ittakestwo.repository.AuthRepository
 import javax.inject.Inject
 
@@ -23,7 +22,6 @@ data class SignInUiState(
 @HiltViewModel
 class SignInViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    private val dataSync: DataSyncRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SignInUiState())
     val uiState = _uiState.asStateFlow()
@@ -40,8 +38,6 @@ class SignInViewModel @Inject constructor(
                     email = _uiState.value.email,
                     password = passwordStr
                 )
-
-                dataSync.initializeData(authRepository.currentUserId)
             } catch (e: Exception) {
                 _uiState.update { state ->
                     state.copy(

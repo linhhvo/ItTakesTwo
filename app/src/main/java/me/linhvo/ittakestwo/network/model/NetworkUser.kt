@@ -22,9 +22,8 @@ data class NetworkUser(
     val avatarFile: String? = null,
 
     @SerialName("updated_at")
-    val updatedAt: Instant,
-
-    )
+    val updatedAt: Instant
+)
 
 fun NetworkUser.toDomainModel() = User(
     id = id,

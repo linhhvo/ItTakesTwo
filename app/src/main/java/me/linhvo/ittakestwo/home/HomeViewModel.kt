@@ -119,10 +119,10 @@ class HomeViewModel @Inject constructor(
     init {
         Log.d("debug_VM", "home VM init")
         viewModelScope.launch {
-            userRepository.syncUsersFromNetwork(authRepository.currentUserId)
+            userRepository.syncUsers(authRepository.currentUserId)
         }
         viewModelScope.launch {
-            pairingRepository.syncPairingFromNetwork(authRepository.currentUserId)
+            pairingRepository.syncPairing(authRepository.currentUserId)
         }
     }
 

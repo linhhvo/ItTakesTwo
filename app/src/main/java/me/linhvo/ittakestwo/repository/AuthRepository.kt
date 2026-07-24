@@ -1,9 +1,11 @@
 package me.linhvo.ittakestwo.repository
 
 import io.github.jan.supabase.auth.status.SessionStatus
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
+import me.linhvo.ittakestwo.common.ApplicationScope
+import me.linhvo.ittakestwo.database.DataSyncRepository
 import me.linhvo.ittakestwo.database.LocalDatabase
-import me.linhvo.ittakestwo.database.dao.UserDao
 import me.linhvo.ittakestwo.database.model.User
 import me.linhvo.ittakestwo.network.datasource.AuthNetworkDataSource
 import javax.inject.Inject
@@ -12,9 +14,11 @@ import kotlin.time.Clock
 
 @Singleton
 class AuthRepository @Inject constructor(
+    @ApplicationScope private val applicationScope: CoroutineScope,
+    private val localDatabase: LocalDatabase,
     private val authNetworkDataSource: AuthNetworkDataSource,
-    private val userDao: UserDao,
-    private val localDatabase: LocalDatabase
+    private val userRepository: UserRepository,
+    private val dataSync: DataSyncRepository,
 ) {
     val sessionStatus: StateFlow<SessionStatus> = authNetworkDataSource.getSession()
 
@@ -29,13 +33,14 @@ class AuthRepository @Inject constructor(
                 ?: throw IllegalStateException("Cannot get current session user ID"),
             email = email,
             displayName = name,
-            updatedAt = Clock.System.now()
+            updatedAt = authNetworkDataSource.currentUser?.updatedAt ?: Clock.System.now()
         )
-        userDao.upsert(newUser)
+        userRepository.addNewUser(newUser)
     }
 
     suspend fun signIn(email: String, password: String) {
         authNetworkDataSource.signIn(email, password)
+        dataSync.initializeData(currentUserId)
     }
 
     suspend fun signOut() {

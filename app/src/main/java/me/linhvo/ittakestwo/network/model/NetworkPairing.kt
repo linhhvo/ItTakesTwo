@@ -5,28 +5,32 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonIgnoreUnknownKeys
 import me.linhvo.ittakestwo.database.model.Pairing
+import kotlin.time.Instant
 
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
 @JsonIgnoreUnknownKeys
 data class NetworkPairing(
-    val id: String,
+    val id: String? = null, // nullable so remote database can auto-generate ID
 
     @SerialName("user_id")
     val userId: String,
 
     @SerialName("partner_id")
-    val partnerId: String? = null
+    val partnerId: String,
+
+    @SerialName("updated_at")
+    val updatedAt: Instant
 )
 
 fun NetworkPairing.toDomainModel(currentUser: String): Pairing {
     val partner = if (currentUser == userId) partnerId
-    else if (partnerId != null) userId
-    else null
+    else userId
 
     return Pairing(
-        id = this.id,
+        id = id!!,
         userId = currentUser,
-        partnerId = partner
+        partnerId = partner,
+        updatedAt = updatedAt
     )
 }

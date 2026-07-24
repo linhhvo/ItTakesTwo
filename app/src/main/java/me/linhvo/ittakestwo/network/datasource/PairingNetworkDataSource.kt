@@ -1,22 +1,20 @@
 package me.linhvo.ittakestwo.network.datasource
 
+import android.util.Log
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.annotations.SupabaseExperimental
 import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.realtime.broadcastFlow
+import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.channel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
-import me.linhvo.ittakestwo.network.model.BroadcastResponse
 import me.linhvo.ittakestwo.network.model.NetworkPairing
 import me.linhvo.ittakestwo.network.model.NetworkUser
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Clock
 
 @Singleton
 class PairingNetworkDataSource @Inject constructor(
@@ -34,7 +32,7 @@ class PairingNetworkDataSource @Inject constructor(
 //        }
 //    }
 
-    suspend fun getPairing(userId: String): NetworkPairing = withContext(Dispatchers.IO) {
+    suspend fun getPairing(userId: String): NetworkPairing? =
         supabase.from("pairings").select {
             filter {
                 or {
@@ -42,6 +40,22 @@ class PairingNetworkDataSource @Inject constructor(
                     eq("partner_id", userId)
                 }
             }
+        }.decodeSingleOrNull<NetworkPairing>()
+
+    suspend fun updatePairing(pairing: NetworkPairing) =
+        supabase.from("pairings").upsert(pairing)
+
+    suspend fun addNewPairing(userId: String, partnerEmail: String): NetworkPairing {
+        val partnerId = supabase.from("users").select {
+            filter { eq("email", partnerEmail) }
+        }.decodeSingleOrNull<NetworkUser>()?.id
+        if (partnerId == null) {
+            throw Exception("No account exists for this email.")
+        }
+
+        val newPairing = NetworkPairing(userId = userId, partnerId = partnerId, updatedAt = Clock.System.now())
+        return supabase.from("pairings").insert(newPairing) {
+            select()
         }.decodeSingle<NetworkPairing>()
     }
 
@@ -49,45 +63,28 @@ class PairingNetworkDataSource @Inject constructor(
     fun getPairingStream(userId: String): Flow<NetworkPairing> {
         val channel = supabase.channel("pairing:$userId") { isPrivate = true }
         return flow {
-            val changeFlow = channel.broadcastFlow<JsonObject>(event = "pairing_changes")
+            val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") { table = "pairings" }
 
             channel.subscribe(blockUntilSubscribed = true)
 
-            changeFlow.onEach { payload ->
-                val res = Json.decodeFromJsonElement<BroadcastResponse>(payload)
-                val pairing = Json.decodeFromJsonElement<NetworkPairing>(res.record)
-                emit(pairing)
+            changeFlow.onEach {
+                if (it is PostgresAction.Insert) {
+                    Log.d("debug_pairingStream", "--PAYLOAD-- $it")
+                    val pairing = Json.decodeFromJsonElement<NetworkPairing>(it.record)
+                    emit(pairing)
+                }
+                //TODO: also need to emit when pairing is removed
             }.collect()
         }.onCompletion {
             channel.unsubscribe()
         }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    fun getProfileStream(userId: String): Flow<Pair<NetworkUser, NetworkUser?>> {
-        val userNetworkDataSource = UserNetworkDataSource(supabase)
-        val userFlow = userNetworkDataSource.getUserStream(userId = userId)
 
-        val partnerFlow = getPairingStream(userId).flatMapLatest {
-//            val partnerId = it.getPartnerId(userId)
-            val partnerId = it.partnerId
-            if (partnerId != null) {
-                userNetworkDataSource.getUserStream(userId = partnerId)
-            } else {
-                flowOf(null)
-            }
-        }
-
-        return combine(userFlow, partnerFlow) { user, partner ->
-            Pair(user, partner)
-        }
-    }
-
-    suspend fun getProfileInfo(userId: String): Pair<NetworkUser, NetworkUser?> {
+    suspend fun getProfileInfo(userId: String): Pair<NetworkUser?, NetworkUser?> {
         val userNetworkDataSource = UserNetworkDataSource(supabase)
         val user = userNetworkDataSource.getUser(userId)
-//        val partnerId = getPairing(userId).getPartnerId(userId)
-        val partnerId = getPairing(userId).partnerId
+        val partnerId = getPairing(userId)?.partnerId
         if (partnerId != null) {
             val partner = userNetworkDataSource.getUser(userId = partnerId)
             return Pair(user, partner)
@@ -95,22 +92,4 @@ class PairingNetworkDataSource @Inject constructor(
             return Pair(user, null)
         }
     }
-
-    suspend fun addPartner(userId: String, partnerEmail: String): NetworkUser {
-        val partner = supabase.from("users").select {
-            filter { eq("email", partnerEmail) }
-        }.decodeSingleOrNull<NetworkUser>()
-        if (partner == null) {
-            throw Exception("No account exists for this email.")
-        }
-
-        supabase.from("pairings").update({
-            set("partner_id", partner.id)
-        }) {
-            filter { eq("user_id", userId) }
-        }
-
-        return partner
-    }
-
 }

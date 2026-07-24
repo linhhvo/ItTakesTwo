@@ -27,10 +27,11 @@ enum class Role(val text: String) {
 
 @Singleton
 class UserNetworkDataSource @Inject constructor(val supabase: SupabaseClient) {
-    suspend fun getUser(userId: String): NetworkUser =
+
+    suspend fun getUser(userId: String): NetworkUser? =
         supabase.from("users").select {
             filter { eq("id", userId) }
-        }.decodeSingle<NetworkUser>()
+        }.decodeSingleOrNull<NetworkUser>()
 
     @OptIn(SupabaseExperimental::class)
     fun getUserStream(userId: String): Flow<NetworkUser> {
@@ -51,6 +52,10 @@ class UserNetworkDataSource @Inject constructor(val supabase: SupabaseClient) {
         }.onCompletion {
             channel.unsubscribe()
         }
+    }
+
+    suspend fun upsertUser(user: NetworkUser) {
+        supabase.from("users").upsert(user)
     }
 
     suspend fun uploadUserAvatar(userId: String, context: Context, avatarUri: Uri) {
