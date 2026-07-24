@@ -4,90 +4,98 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
 import kotlinx.coroutines.launch
 import me.linhvo.ittakestwo.database.model.Message
 import me.linhvo.ittakestwo.database.model.User
-import me.linhvo.ittakestwo.network.datasource.MessageNetworkDataSource
-import me.linhvo.ittakestwo.network.datasource.PairingNetworkDataSource
 import me.linhvo.ittakestwo.repository.AuthRepository
+import me.linhvo.ittakestwo.repository.ChatRepository
+import me.linhvo.ittakestwo.repository.PairingRepository
 import javax.inject.Inject
 
 data class ChatUiState(
     val user: User? = null,
     val partner: User? = null,
-    val errorMessage: String? = null,
     val chatMessages: List<Message> = emptyList(),
-    val userInput: String = ""
+    val userInput: String = "",
+    val errorMessage: String? = null,
 )
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
-    authRepository: AuthRepository,
-    private val pairingNetworkDataSource: PairingNetworkDataSource,
-    private val messageNetworkDataSource: MessageNetworkDataSource,
+    private val authRepository: AuthRepository,
+    private val pairingRepository: PairingRepository,
+    private val chatRepository: ChatRepository
 ) : ViewModel() {
     private val _currentUserId = authRepository.currentUserId
-    private val _uiState = MutableStateFlow(ChatUiState())
-    val uiState = _uiState.asStateFlow()
+    private val _errorMessage: MutableStateFlow<String?> = MutableStateFlow(null)
+    private val _userInput = MutableStateFlow("")
+
+    val uiState: StateFlow<ChatUiState> =
+        combine(
+            pairingRepository.getUserPairStream(_currentUserId),
+            chatRepository.getMessageListStream(),
+            _errorMessage,
+            _userInput
+        ) { userPair, messages, errorMessage, userInput ->
+            ChatUiState(
+                user = userPair.first,
+                partner = userPair.second,
+                chatMessages = messages,
+                userInput = userInput,
+                errorMessage = errorMessage
+            )
+        }.catch {
+            emit(ChatUiState(errorMessage = it.message))
+        }.stateIn(
+            scope = viewModelScope,
+            started = WhileSubscribed(5000),
+            initialValue = ChatUiState()
+        )
 
     fun onInputChange(input: String) {
-        _uiState.update { it.copy(userInput = input) }
+        _userInput.value = input
     }
 
     fun sendMessage() {
         viewModelScope.launch {
-            if (_uiState.value.userInput.isNotBlank()) {
+            val cleanInput = _userInput.value.trim()
+            if (cleanInput.isNotBlank()) {
                 try {
-                    messageNetworkDataSource.addMessage(userId = _currentUserId!!, content = _uiState.value.userInput)
+                    chatRepository.addNewMessage(
+                        senderId = _currentUserId,
+                        recipientId = pairingRepository.getPartnerId()
+                            ?: throw IllegalStateException("partner ID is not available"),
+                        content = cleanInput
+                    )
+                    _userInput.value = ""
                 } catch (e: Exception) {
-                    _uiState.update { it.copy(errorMessage = e.message) }
+                    _errorMessage.value = e.message
                 }
             }
         }
-        _uiState.update { it.copy(userInput = "") }
     }
 
     fun resetErrorMessage() {
-        _uiState.update { it.copy(errorMessage = null) }
+        _errorMessage.value = null
     }
 
     fun markAsRead() {
         viewModelScope.launch {
-            messageNetworkDataSource.updateReadTime(_currentUserId!!)
+            chatRepository.markAllAsRead(_currentUserId)
         }
     }
 
     init {
         Log.d("debug_VM", "chat VM init")
         viewModelScope.launch {
-            if (_currentUserId != null) {
-                val users = pairingNetworkDataSource.getProfileInfo(_currentUserId)
-                val messages = messageNetworkDataSource.getMessages(_currentUserId)
-
-//                _uiState.update { it.copy(user = users.first, partner = users.second, chatMessages = messages) }
-            } else {
-                _uiState.update { it.copy(errorMessage = "unable to get user ID") }
-            }
+            chatRepository.populateMessagesToLocalDatabase(_currentUserId)
+            Log.d("debug_messages", "populated messages")
         }
-
         viewModelScope.launch {
-            messageNetworkDataSource.getMessageStream(_currentUserId!!).collect { message ->
-//                Log.d("debug_newMessage", message.toString())
-                val newList = _uiState.value.chatMessages.toMutableList()
-                val existingMessageInd = newList.indexOfFirst { it.id == message.id }
-
-                if (existingMessageInd != -1) {
-                    newList.removeAt(existingMessageInd)
-//                    newList.add(existingMessageInd, message)
-                } else {
-//                    newList.add(0, message)
-                }
-
-                _uiState.update { it.copy(chatMessages = newList) }
-            }
+            Log.d("debug_messages", "syncing messages")
+            chatRepository.syncMessages(_currentUserId)
         }
     }
 

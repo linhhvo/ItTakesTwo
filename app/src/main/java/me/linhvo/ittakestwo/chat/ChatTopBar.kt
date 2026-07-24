@@ -17,9 +17,13 @@ import me.linhvo.ittakestwo.database.model.User
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatTopBar(partner: User, scrollBehavior: TopAppBarScrollBehavior, navigateToHome: () -> Unit) {
+fun ChatTopBar(
+    partner: User,
+//    scrollBehavior: TopAppBarScrollBehavior,
+    navigateToHome: () -> Unit
+) {
     TopAppBar(
-        scrollBehavior = scrollBehavior,
+//        scrollBehavior = scrollBehavior,
         modifier = Modifier.padding(0.dp),
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.surface,

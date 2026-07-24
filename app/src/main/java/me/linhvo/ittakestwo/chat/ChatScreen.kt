@@ -12,7 +12,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -30,7 +29,7 @@ import me.linhvo.ittakestwo.ui.components.Dialog
 @Composable
 fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () -> Unit) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+//    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
 
     if (uiState.errorMessage != null) {
@@ -38,7 +37,7 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () ->
     }
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+//        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         contentWindowInsets = ScaffoldDefaults
             .contentWindowInsets
             .exclude(WindowInsets.ime),
@@ -46,7 +45,7 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () ->
             if (uiState.partner != null) {
                 ChatTopBar(
                     partner = uiState.partner!!,
-                    scrollBehavior = scrollBehavior,
+//                    scrollBehavior = scrollBehavior,
                     navigateToHome = navigateToHome
                 )
             }
@@ -75,7 +74,11 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () ->
 }
 
 @Composable
-fun ChatContent(messages: List<Message>, markAsRead: () -> Unit, modifier: Modifier = Modifier) {
+fun ChatContent(
+    messages: List<Message>,
+    markAsRead: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val screenWidth = LocalConfiguration.current.screenWidthDp
     val listState = rememberLazyListState()
 

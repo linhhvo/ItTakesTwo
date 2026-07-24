@@ -27,7 +27,7 @@ class UserRepository @Inject constructor(
         }
     }
 
-    suspend fun upsertUserFromNetwork(userId: String) {
+    suspend fun populateUserToLocalDatabase(userId: String) {
         val networkUser = userNetworkDataSource.getUser(userId)
         if (networkUser != null) {
             userDao.upsert(networkUser.toDomainModel())

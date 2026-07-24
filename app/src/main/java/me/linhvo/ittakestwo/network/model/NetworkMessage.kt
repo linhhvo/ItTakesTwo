@@ -2,13 +2,16 @@ package me.linhvo.ittakestwo.network.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import me.linhvo.ittakestwo.database.model.Message
 import kotlin.time.Instant
 
 @Serializable
 data class NetworkMessage(
     val id: String? = null,
-    val sender: String,
-    val recipient: String,
+    @SerialName("sender_id")
+    val senderId: String,
+    @SerialName("recipient_id")
+    val recipientId: String,
     val content: String,
 
     @SerialName("sent_at")
@@ -16,6 +19,15 @@ data class NetworkMessage(
 
     @SerialName("read_at")
     val readAt: Instant? = null,
-
-//    var isSenderMe: Boolean = false
 )
+
+fun NetworkMessage.toDomainModel(currentUser: String) =
+    Message(
+        id = id!!,
+        senderId = senderId,
+        recipientId = recipientId,
+        content = content,
+        sentAt = sentAt,
+        readAt = readAt,
+        isSenderMe = currentUser == senderId
+    )

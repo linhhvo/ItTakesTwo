@@ -20,9 +20,11 @@ class PairingRepository @Inject constructor(
     private val pairingDao: PairingDao,
     private val userRepository: UserRepository
 ) {
+    suspend fun getPartnerId(): String? = pairingDao.getPairing()?.partnerId
+
     suspend fun addPartner(userId: String, partnerEmail: String) {
         pairingNetworkDataSource.addNewPairing(userId, partnerEmail).let { newPairing ->
-            userRepository.upsertUserFromNetwork(userId = newPairing.partnerId)
+            userRepository.populateUserToLocalDatabase(userId = newPairing.partnerId)
             pairingDao.upsert(newPairing.toDomainModel(userId))
         }
     }
@@ -42,6 +44,13 @@ class PairingRepository @Inject constructor(
 
         return combine(userFlow, partnerFlow) { user, partner ->
             Pair(user, partner)
+        }
+    }
+
+    suspend fun populatePairingToLocalDatabase(userId: String) {
+        pairingNetworkDataSource.getPairing(userId)?.toDomainModel(userId)?.let { pairing ->
+            pairingDao.upsert(pairing)
+            userRepository.populateUserToLocalDatabase(pairing.partnerId)
         }
     }
 
@@ -71,7 +80,7 @@ class PairingRepository @Inject constructor(
                 }
 
                 if (oldPairing?.partnerId == null) {
-                    userRepository.upsertUserFromNetwork(it.partnerId)
+                    userRepository.populateUserToLocalDatabase(it.partnerId)
                 }
 
                 pairingDao.upsert(it)
