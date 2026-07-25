@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -18,12 +19,12 @@ import me.linhvo.ittakestwo.database.model.User
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatTopBar(
-    partner: User,
-//    scrollBehavior: TopAppBarScrollBehavior,
+    partner: User?,
     navigateToHome: () -> Unit
 ) {
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     TopAppBar(
-//        scrollBehavior = scrollBehavior,
         modifier = Modifier.padding(0.dp),
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.surface,
@@ -32,11 +33,15 @@ fun ChatTopBar(
         ),
         title = {
             Text(
-                text = partner.displayName, fontSize = 25.sp, fontWeight = FontWeight.SemiBold
+                text = partner?.displayName ?: "No partner", fontSize = 25.sp, fontWeight = FontWeight.SemiBold
             )
         },
+
         navigationIcon = {
-            IconButton(onClick = { navigateToHome() }) {
+            IconButton(onClick = {
+                keyboardController?.hide()
+                navigateToHome()
+            }) {
                 Icon(
                     painter = painterResource(R.drawable.back_icon),
                     contentDescription = "arrow back icon",

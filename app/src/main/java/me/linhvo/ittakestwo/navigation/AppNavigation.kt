@@ -36,10 +36,12 @@ import me.linhvo.ittakestwo.settings.SettingsScreen
 fun AppNavigation(viewModel: NavViewModel = hiltViewModel()) {
     val backStack = rememberNavBackStack(Route.Start)
     val sessionStatus by viewModel.sessionStatus.collectAsStateWithLifecycle()
+    val unreadMessageCount by viewModel.unreadMessageCount.collectAsStateWithLifecycle()
 
     LaunchedEffect(sessionStatus) {
         when (sessionStatus) {
             is SessionStatus.Authenticated -> {
+                viewModel.initializeData()
                 if (backStack.last() is Route.InitialRoute) {
                     backStack.clear()
                     backStack.add(Route.Home)
@@ -132,6 +134,7 @@ fun AppNavigation(viewModel: NavViewModel = hiltViewModel()) {
                 AppNavBar(
                     modifier = Modifier.padding(bottom = 30.dp),
                     currentRoute = backStack.last(),
+                    unreadMessageCount = unreadMessageCount,
                     onNavItemClicked = {
                         if (it != Route.Home) {
                             backStack.add(it)

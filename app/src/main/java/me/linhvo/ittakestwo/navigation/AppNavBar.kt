@@ -1,14 +1,11 @@
 package me.linhvo.ittakestwo.navigation
 
-import android.util.Log
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
@@ -16,8 +13,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 
 
@@ -25,16 +20,10 @@ import androidx.navigation3.runtime.NavKey
 fun AppNavBar(
     modifier: Modifier = Modifier,
     currentRoute: NavKey,
-    onNavItemClicked: (Route.BottomNavRoute) -> Unit
+    onNavItemClicked: (Route.BottomNavRoute) -> Unit,
+    unreadMessageCount: Int
 ) {
     val containerColor = MaterialTheme.colorScheme.onPrimaryContainer
-    val viewModel: NavBarViewModel = viewModel()
-    val unreadMessageCount by viewModel.unreadMessageCount.collectAsStateWithLifecycle()
-
-    LaunchedEffect(unreadMessageCount) {
-        Log.d("debug_unread", "nav bar launch effect trigger")
-        viewModel.getUnreadCount()
-    }
 
     Row(
         modifier = modifier

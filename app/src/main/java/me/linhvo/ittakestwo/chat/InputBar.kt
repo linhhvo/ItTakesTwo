@@ -16,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
@@ -98,8 +97,6 @@ fun InputBar(
                 .align(Alignment.CenterVertically)
         )
 
-        val keyboardController = LocalSoftwareKeyboardController.current
-
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.height(45.dp)) {
             Icon(
                 painter = painterResource(R.drawable.send_icon),
@@ -110,7 +107,6 @@ fun InputBar(
                     .clickable(
                         enabled = true,
                         onClick = {
-                            keyboardController?.hide()
                             sendMessage()
                         },
                         indication = null,

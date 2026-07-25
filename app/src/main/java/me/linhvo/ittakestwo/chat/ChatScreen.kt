@@ -42,13 +42,10 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () ->
             .contentWindowInsets
             .exclude(WindowInsets.ime),
         topBar = {
-            if (uiState.partner != null) {
-                ChatTopBar(
-                    partner = uiState.partner!!,
-//                    scrollBehavior = scrollBehavior,
-                    navigateToHome = navigateToHome
-                )
-            }
+            ChatTopBar(
+                partner = uiState.partner,
+                navigateToHome = navigateToHome
+            )
         }) { innerPadding ->
         Column(
             modifier = Modifier
@@ -82,8 +79,8 @@ fun ChatContent(
     val screenWidth = LocalConfiguration.current.screenWidthDp
     val listState = rememberLazyListState()
 
-    LaunchedEffect(messages) {
-        if (listState.firstVisibleItemIndex == 1) {
+    LaunchedEffect(messages.size) {
+        if (listState.firstVisibleItemIndex <= 1) {
             listState.animateScrollToItem(0)
         }
     }
@@ -105,7 +102,7 @@ fun ChatContent(
             .padding(top = 0.dp, start = 20.dp, end = 20.dp, bottom = 10.dp)
     ) {
         itemsIndexed(
-            items = messages, key = { _, message -> message.id!! }) { index, currentMessage ->
+            items = messages, key = { _, message -> message.id }) { index, currentMessage ->
             val prevMessage = messages.getOrNull(index + 1)
             val isPrevMessageBySameSender = prevMessage?.senderId == currentMessage.senderId
 

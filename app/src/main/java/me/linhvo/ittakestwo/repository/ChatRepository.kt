@@ -1,6 +1,10 @@
 package me.linhvo.ittakestwo.repository
 
+import android.util.Log
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
+import me.linhvo.ittakestwo.common.ApplicationScope
 import me.linhvo.ittakestwo.database.dao.MessageDao
 import me.linhvo.ittakestwo.database.model.Message
 import me.linhvo.ittakestwo.network.datasource.MessageNetworkDataSource
@@ -13,24 +17,31 @@ import kotlin.time.Clock
 @Singleton
 class ChatRepository @Inject constructor(
     private val messageDao: MessageDao,
-    private val messageNetworkDataSource: MessageNetworkDataSource
+    private val messageNetworkDataSource: MessageNetworkDataSource,
+    @ApplicationScope private val applicationScope: CoroutineScope
 ) {
 
     suspend fun getMessages(): List<Message> = messageDao.loadMessagesOrderByLatest()
 
     fun getMessageListStream(): Flow<List<Message>> = messageDao.observeMessagesOrderByLatest()
 
-    suspend fun addNewMessage(senderId: String, recipientId: String, content: String) {
-        val newMessage = NetworkMessage(
-            senderId = senderId,
-            recipientId = recipientId,
-            content = content,
-        )
+    fun addNewMessage(senderId: String, recipientId: String, content: String) {
+        applicationScope.launch {
+            try {
+                val newMessage = NetworkMessage(
+                    senderId = senderId,
+                    recipientId = recipientId,
+                    content = content,
+                )
 
-        messageNetworkDataSource.addMessage(newMessage).let {
-            val message = it.toDomainModel(senderId)
-            message.isSenderMe = true
-            messageDao.upsert(message)
+                messageNetworkDataSource.addMessage(newMessage).let {
+                    val message = it.toDomainModel(senderId)
+                    message.isSenderMe = true
+                    messageDao.upsert(message)
+                }
+            } catch (e: Exception) {
+                Log.d("debug_addMessage_error", e.toString())
+            }
         }
     }
 
@@ -48,9 +59,11 @@ class ChatRepository @Inject constructor(
         messageNetworkDataSource.getMessages(userId).forEach {
             messageDao.upsert(it.toDomainModel(userId))
         }
+        Log.d("debug_messages", "populated messages")
     }
 
     suspend fun syncMessages(currentUser: String) {
+        Log.d("debug_messages", "syncing messages")
         messageNetworkDataSource.getMessageStream(currentUser).collect {
             messageDao.upsert(it.toDomainModel(currentUser))
         }

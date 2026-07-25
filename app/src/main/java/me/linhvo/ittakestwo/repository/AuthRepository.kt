@@ -40,7 +40,6 @@ class AuthRepository @Inject constructor(
 
     suspend fun signIn(email: String, password: String) {
         authNetworkDataSource.signIn(email, password)
-        dataSync.initializeData(currentUserId)
     }
 
     suspend fun signOut() {

@@ -24,7 +24,7 @@ data class ChatUiState(
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
-    private val authRepository: AuthRepository,
+    authRepository: AuthRepository,
     private val pairingRepository: PairingRepository,
     private val chatRepository: ChatRepository
 ) : ViewModel() {
@@ -66,7 +66,7 @@ class ChatViewModel @Inject constructor(
                     chatRepository.addNewMessage(
                         senderId = _currentUserId,
                         recipientId = pairingRepository.getPartnerId()
-                            ?: throw IllegalStateException("partner ID is not available"),
+                            ?: throw IllegalStateException("Partner is not available"),
                         content = cleanInput
                     )
                     _userInput.value = ""
@@ -89,14 +89,6 @@ class ChatViewModel @Inject constructor(
 
     init {
         Log.d("debug_VM", "chat VM init")
-        viewModelScope.launch {
-            chatRepository.populateMessagesToLocalDatabase(_currentUserId)
-            Log.d("debug_messages", "populated messages")
-        }
-        viewModelScope.launch {
-            Log.d("debug_messages", "syncing messages")
-            chatRepository.syncMessages(_currentUserId)
-        }
     }
 
     override fun onCleared() {
