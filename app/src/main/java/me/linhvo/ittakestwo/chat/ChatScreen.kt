@@ -1,5 +1,10 @@
 package me.linhvo.ittakestwo.chat
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,6 +21,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -29,15 +35,27 @@ import me.linhvo.ittakestwo.ui.components.Dialog
 @Composable
 fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () -> Unit) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-//    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
+    val activity = LocalActivity.current
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        val shouldPromptAgain = activity?.let {
+            !ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.POST_NOTIFICATIONS)
+        } ?: true
+        if (isGranted) {
+            viewModel.updateNotiPermissionResponse()
+        } else if (!shouldPromptAgain) {
+            viewModel.updateNotiPermissionResponse()
+        }
+    }
 
     if (uiState.errorMessage != null) {
         Dialog(errorMessage = uiState.errorMessage!!, onDismissRequest = viewModel::resetErrorMessage)
     }
 
     Scaffold(
-//        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         contentWindowInsets = ScaffoldDefaults
             .contentWindowInsets
             .exclude(WindowInsets.ime),
@@ -54,6 +72,13 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () ->
                 .padding(innerPadding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            if (uiState.showNotiPermissionRequest) {
+                NotificationPermissionAlert(onAllowClick = {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                })
+            }
             ChatContent(
                 messages = uiState.chatMessages,
                 markAsRead = viewModel::markAsRead,

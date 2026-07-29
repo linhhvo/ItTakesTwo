@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+option java_package = "me.linhvo.ittakestwo";
+option java_multiple_files = true;
+
+message Configs {
+  bool noti_permission_responded = 1;
+}

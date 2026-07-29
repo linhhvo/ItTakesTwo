@@ -18,7 +18,8 @@ import kotlin.time.Instant
         Pairing::class,
         Message::class
     ],
-    version = 1
+    version = 1,
+    exportSchema = false
 )
 
 @ColumnTypeConverters(Converters::class)
