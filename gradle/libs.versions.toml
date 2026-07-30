@@ -75,6 +75,7 @@ supabase-realtime-kt = { module = "io.github.jan-tennert.supabase:realtime-kt" }
 supabase-storage-kt = { module = "io.github.jan-tennert.supabase:storage-kt", version.ref = "supabase" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 firebase-installations = { module = "com.google.firebase:firebase-installations" }
 androidx-datastore = { module = "androidx.datastore:datastore", version.ref = "datastore" }
 google-protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin-lite", version.ref = "protobuf" }

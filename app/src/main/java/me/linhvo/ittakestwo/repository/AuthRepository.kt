@@ -1,10 +1,13 @@
 package me.linhvo.ittakestwo.repository
 
+import com.google.firebase.Firebase
+import com.google.firebase.installations.installations
+import com.google.firebase.messaging.messaging
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.tasks.await
 import me.linhvo.ittakestwo.common.ApplicationScope
-import me.linhvo.ittakestwo.database.DataSyncRepository
 import me.linhvo.ittakestwo.database.LocalDatabase
 import me.linhvo.ittakestwo.database.model.User
 import me.linhvo.ittakestwo.network.datasource.AuthNetworkDataSource
@@ -18,7 +21,6 @@ class AuthRepository @Inject constructor(
     private val localDatabase: LocalDatabase,
     private val authNetworkDataSource: AuthNetworkDataSource,
     private val userRepository: UserRepository,
-    private val dataSync: DataSyncRepository,
 ) {
     val sessionStatus: StateFlow<SessionStatus> = authNetworkDataSource.getSession()
 
@@ -29,22 +31,26 @@ class AuthRepository @Inject constructor(
         authNetworkDataSource.signUp(name, email, password)
 
         val newUser = User(
-            id = authNetworkDataSource.currentUserId
-                ?: throw IllegalStateException("Cannot get current session user ID"),
+            id = currentUserId,
             email = email,
             displayName = name,
-            updatedAt = authNetworkDataSource.currentUser?.updatedAt ?: Clock.System.now()
+            updatedAt = authNetworkDataSource.currentUser?.updatedAt ?: Clock.System.now(),
+            fid = Firebase.installations.id.await(),
+            fcmToken = Firebase.messaging.token.await()
         )
         userRepository.addNewUser(newUser)
     }
 
     suspend fun signIn(email: String, password: String) {
         authNetworkDataSource.signIn(email, password)
+
+        userRepository.updateUserFid(
+            userId = currentUserId, fid = Firebase.installations.id.await(), fcmToken = Firebase.messaging.token.await()
+        )
     }
 
     suspend fun signOut() {
         authNetworkDataSource.signOut()
-        //TODO: maybe clear Room database
         localDatabase.clearAllTables()
     }
 }

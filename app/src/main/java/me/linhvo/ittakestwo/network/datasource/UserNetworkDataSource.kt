@@ -58,6 +58,15 @@ class UserNetworkDataSource @Inject constructor(val supabase: SupabaseClient) {
         supabase.from("users").upsert(user)
     }
 
+    suspend fun updateUserFid(userId: String, fid: String, fcmToken: String) {
+        supabase.from("users").update({
+            set("fcm_token", fcmToken)
+            set("fid", fid)
+        }) {
+            filter { eq("id", userId) }
+        }
+    }
+
     suspend fun uploadUserAvatar(userId: String, context: Context, avatarUri: Uri) {
         val signedUrl = supabase.storage.from("avatars").createSignedUploadUrl("$userId.png", upsert = true)
         val byteArray = context.contentResolver.openInputStream(avatarUri)?.use { it.buffered().readBytes() }

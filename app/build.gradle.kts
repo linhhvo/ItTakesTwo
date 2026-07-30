@@ -98,6 +98,7 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
     implementation(libs.firebase.installations)
+    implementation(libs.firebase.analytics)
     implementation(libs.androidx.datastore)
     implementation(libs.google.protobuf.kotlin)
 

@@ -22,7 +22,12 @@ data class NetworkUser(
     val avatarFile: String? = null,
 
     @SerialName("updated_at")
-    val updatedAt: Instant
+    val updatedAt: Instant,
+
+    val fid: String? = null,
+
+    @SerialName("fcm_token")
+    val fcmToken: String? = null
 )
 
 fun NetworkUser.toDomainModel() = User(
@@ -30,7 +35,9 @@ fun NetworkUser.toDomainModel() = User(
     email = email,
     displayName = displayName,
     avatarFile = avatarFile,
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
+    fid = fid,
+    fcmToken = fcmToken
 )
 
 @OptIn(ExperimentalSerializationApi::class)

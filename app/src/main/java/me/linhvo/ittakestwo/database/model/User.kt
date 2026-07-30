@@ -12,7 +12,9 @@ data class User(
     val email: String,
     val displayName: String,
     var avatarFile: String? = null,
-    var updatedAt: Instant
+    var updatedAt: Instant,
+    val fid: String? = null,
+    val fcmToken: String? = null
 ) {
     val initial: String
         get() = displayName.first().uppercase()
@@ -24,5 +26,7 @@ fun User.toNetworkModel() =
         email = email,
         displayName = displayName,
         avatarFile = avatarFile,
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
+        fid = fid,
+        fcmToken = fcmToken
     )

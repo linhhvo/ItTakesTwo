@@ -27,6 +27,10 @@ class UserRepository @Inject constructor(
         }
     }
 
+    suspend fun updateUserFid(userId: String, fid: String, fcmToken: String) {
+        userNetworkDataSource.updateUserFid(userId, fid, fcmToken)
+    }
+
     suspend fun populateUserToLocalDatabase(userId: String) {
         val networkUser = userNetworkDataSource.getUser(userId)
         if (networkUser != null) {
