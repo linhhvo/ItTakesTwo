@@ -26,7 +26,9 @@ class NavViewModel @Inject constructor(
     private val _unreadMessageCount = MutableStateFlow(0)
     val unreadMessageCount = _unreadMessageCount.asStateFlow()
     fun initializeData() {
-        dataSync.initializeData(authRepository.currentUserId)
+        viewModelScope.launch {
+            dataSync.initializeData(authRepository.currentUserId)
+        }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

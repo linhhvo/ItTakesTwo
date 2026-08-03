@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.auth.exception.AuthRestException
 import io.github.jan.supabase.exceptions.RestException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
 import kotlinx.coroutines.launch
@@ -118,11 +119,24 @@ class HomeViewModel @Inject constructor(
 
     init {
         Log.d("debug_VM", "home VM init")
+
         viewModelScope.launch {
-            userRepository.syncUsers(authRepository.currentUserId)
+            try {
+                userRepository.syncUsers(authRepository.currentUserId)
+            } catch (e: Exception) {
+                if (e !is CancellationException) {
+                    _errorMessage.value = "Error syncing with database to get user info. Restart the app"
+                }
+            }
         }
         viewModelScope.launch {
-            pairingRepository.syncPairing(authRepository.currentUserId)
+            try {
+                pairingRepository.syncPairing(authRepository.currentUserId)
+            } catch (e: Exception) {
+                if (e !is CancellationException) {
+                    _errorMessage.value = "Error syncing with database to get pairing info. Restart the app"
+                }
+            }
         }
     }
 

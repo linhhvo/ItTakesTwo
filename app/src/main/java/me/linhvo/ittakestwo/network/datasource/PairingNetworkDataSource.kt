@@ -81,15 +81,4 @@ class PairingNetworkDataSource @Inject constructor(
     }
 
 
-    suspend fun getProfileInfo(userId: String): Pair<NetworkUser?, NetworkUser?> {
-        val userNetworkDataSource = UserNetworkDataSource(supabase)
-        val user = userNetworkDataSource.getUser(userId)
-        val partnerId = getPairing(userId)?.partnerId
-        if (partnerId != null) {
-            val partner = userNetworkDataSource.getUser(userId = partnerId)
-            return Pair(user, partner)
-        } else {
-            return Pair(user, null)
-        }
-    }
 }

@@ -1,7 +1,6 @@
 package me.linhvo.ittakestwo.navigation
 
 import android.annotation.SuppressLint
-import android.util.Log
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -83,30 +82,25 @@ fun AppNavigation(viewModel: NavViewModel = hiltViewModel()) {
                         //TODO: add app start screen
                     }
                     entry<Route.Home> {
-                        Log.d("backstack -- Home", backStack.toList().toString())
                         HomeScreen()
                     }
                     entry<Route.SignIn> {
-                        Log.d("backstack -- Signin", backStack.toList().toString())
                         SignInScreen(
                             onCreateAccountTextClick = dropUnlessResumed {
                                 backStack.add(Route.SignUp)
                             })
                     }
                     entry<Route.SignUp> {
-                        Log.d("backstack -- Signup", backStack.toList().toString())
                         SignUpScreen()
                     }
 
                     entry<Route.Chat> {
-                        Log.d("backstack -- chat", backStack.toList().toString())
                         ChatScreen(navigateToHome = dropUnlessResumed {
                             backStack.clear()
                             backStack.add(Route.Home)
                         })
                     }
                     entry<Route.Settings> {
-                        Log.d("backstack -- settings", backStack.toList().toString())
                         SettingsScreen()
 
                     }

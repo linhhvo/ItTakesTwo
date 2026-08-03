@@ -8,12 +8,31 @@ import android.content.Intent
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.net.toUri
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import me.linhvo.ittakestwo.MainActivity
 import me.linhvo.ittakestwo.R
+import me.linhvo.ittakestwo.common.ApplicationScope
+import me.linhvo.ittakestwo.repository.AuthRepository
+import me.linhvo.ittakestwo.repository.ChatRepository
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class MessagingService : FirebaseMessagingService() {
+    @Inject
+    lateinit var chatRepository: ChatRepository
+
+    @Inject
+    lateinit var authRepository: AuthRepository
+
+    @Inject
+    @ApplicationScope
+    lateinit var scope: CoroutineScope
+
     override fun onNewToken(token: String) {
         super.onNewToken(token)
     }
@@ -26,21 +45,21 @@ class MessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
 
+        scope.launch {
+            chatRepository.populateMessagesToLocalDatabase(authRepository.currentUserId)
+        }
+
         val title = message.notification?.title
         val content = message.notification?.body
 
-        if (title != null && content != null) {
-            showNotification(title, content)
-        }
-
-        Log.d(
-            "debug_firebase",
-            "message received:\n title: ${message.notification?.title}\n body: ${message.notification?.body}"
-        )
-
+//        if (AppNavigation.currentRoute != Route.Chat) {
+//        if (title != null && content != null) {
+//            showNotification(title, content)
+//            }
+//        }
     }
 
-    fun showNotification(senderName: String, content: String) {
+    fun showNotification(senderName: String, content: String, screen: String? = null) {
         val channelId = "new_chat_message"
         val channelName = "New Message"
 
@@ -49,6 +68,7 @@ class MessagingService : FirebaseMessagingService() {
 
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            data = "https://ittakestwo.linhvo.me/$screen".toUri()
         }
         val pendingIntent: PendingIntent =
             PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
@@ -60,7 +80,6 @@ class MessagingService : FirebaseMessagingService() {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
-            .setOnlyAlertOnce(true)
             .setCategory("Chat")
 
         if (notificationManager.getNotificationChannel(channelId) == null) {
@@ -74,7 +93,6 @@ class MessagingService : FirebaseMessagingService() {
         with(NotificationManagerCompat.from(this)) {
             if (notificationManager.areNotificationsEnabled()) {
                 notify(1, builder.build())
-                Log.d("debug_noti", "show noti")
             }
         }
     }
