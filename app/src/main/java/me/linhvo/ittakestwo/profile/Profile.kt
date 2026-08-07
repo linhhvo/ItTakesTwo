@@ -69,7 +69,12 @@ fun ProfileDialog(
                 onCancelClick = {
                     shouldShowAvatarPreview = false
                 },
-                modifier = Modifier.size(width = screenWidth - 30.dp, height = screenWidth + 40.dp)
+                modifier = Modifier.sizeIn(
+                    minWidth = screenWidth - 30.dp,
+                    maxWidth = 300.dp,
+                    minHeight = screenWidth + 40.dp,
+                    maxHeight = 350.dp
+                )
             )
         }
     }

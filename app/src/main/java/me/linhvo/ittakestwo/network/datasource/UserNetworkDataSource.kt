@@ -5,7 +5,6 @@ import io.github.jan.supabase.annotations.SupabaseExperimental
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.realtime.broadcastFlow
 import io.github.jan.supabase.realtime.channel
-import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -15,7 +14,6 @@ import me.linhvo.ittakestwo.network.model.NetworkUser
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Clock
-import kotlin.time.Duration.Companion.hours
 
 @Singleton
 class UserNetworkDataSource @Inject constructor(val supabase: SupabaseClient) {
@@ -58,22 +56,5 @@ class UserNetworkDataSource @Inject constructor(val supabase: SupabaseClient) {
         }
     }
 
-    suspend fun uploadUserAvatar(fileName: String, byteArray: ByteArray?) {
-        val signedUrl = supabase.storage.from("avatars").createSignedUploadUrl(fileName, upsert = true)
 
-        byteArray?.let {
-            supabase.storage.from("avatars")
-                .uploadToSignedUrl(path = fileName, token = signedUrl.token, data = byteArray) {
-                    upsert = true
-                }
-        }
-    }
-
-    suspend fun getAvatarUrlFromNet(avatarFile: String?): String? {
-        return if (avatarFile != null) {
-            supabase.storage.from("avatars").createSignedUrl(path = avatarFile, expiresIn = 1.hours)
-        } else {
-            null
-        }
-    }
 }

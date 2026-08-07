@@ -12,7 +12,7 @@ interface UserDao {
     suspend fun getUsers(): List<User>
 
     @Query("select * from user where id = :userId")
-    suspend fun loadUser(userId: String): User
+    suspend fun loadUser(userId: String): User?
 
     @Query("select * from user where id = :userId")
     fun observeUser(userId: String): Flow<User?>
