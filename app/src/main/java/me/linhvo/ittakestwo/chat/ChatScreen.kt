@@ -28,8 +28,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import me.linhvo.ittakestwo.database.model.Message
-import me.linhvo.ittakestwo.database.util.parseDateTimeToLocalTZ
 import me.linhvo.ittakestwo.ui.components.Dialog
+import me.linhvo.ittakestwo.util.parseDateTimeToLocalTZ
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import me.linhvo.ittakestwo.R
 import me.linhvo.ittakestwo.database.model.Message
-import me.linhvo.ittakestwo.database.util.parseDateTimeToLocalTZ
+import me.linhvo.ittakestwo.util.parseDateTimeToLocalTZ
 
 @Composable
 fun Message(

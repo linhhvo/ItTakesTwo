@@ -1,4 +1,4 @@
-package me.linhvo.ittakestwo.database.util
+package me.linhvo.ittakestwo.util
 
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
