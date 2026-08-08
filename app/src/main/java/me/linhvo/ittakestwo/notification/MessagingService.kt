@@ -5,7 +5,6 @@ import android.app.NotificationChannelGroup
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.net.toUri
@@ -39,7 +38,6 @@ class MessagingService : FirebaseMessagingService() {
 
     override fun onRegistered(installationId: String) {
         super.onRegistered(installationId)
-        Log.d("debug_firebase", "FID: $installationId")
     }
 
     override fun onMessageReceived(message: RemoteMessage) {

@@ -1,27 +1,26 @@
 package me.linhvo.ittakestwo.profile
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.net.Uri
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale.Companion.Crop
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -30,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
+import com.bumptech.glide.integration.compose.GlideImage
 import me.linhvo.ittakestwo.R
 import me.linhvo.ittakestwo.database.model.User
 
@@ -42,24 +42,40 @@ data class Event(
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
 fun ProfileDialog(
+    uploadAvatar: (Uri?) -> Unit,
     onDismissRequest: () -> Unit,
     user: User?,
     partner: User?,
-    uploadAvatar: (Context, Uri) -> Unit,
 ) {
-//    val eventList = listOf(Event(1, "wedding", "10-12-2020"))
-    val eventList = emptyList<Event>()
-
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-    val context = LocalContext.current
 
+    var shouldShowAvatarPreview by rememberSaveable { mutableStateOf(false) }
+    var selectedUri by remember { mutableStateOf<Uri?>(null) }
     val pickMedia = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) {
-            Log.d("debug", uri.toString())
-//            uploadAvatar(context, uri)
+            selectedUri = uri
+            shouldShowAvatarPreview = true
+        }
+    }
 
-        } else {
-            Log.d("debug", "no media selected")
+    if (shouldShowAvatarPreview) {
+        if (selectedUri != null) {
+            AvatarPreview(
+                imageUri = selectedUri,
+                onSaveClick = {
+                    uploadAvatar(selectedUri)
+                    shouldShowAvatarPreview = false
+                },
+                onCancelClick = {
+                    shouldShowAvatarPreview = false
+                },
+                modifier = Modifier.sizeIn(
+                    minWidth = screenWidth - 30.dp,
+                    maxWidth = 300.dp,
+                    minHeight = screenWidth + 40.dp,
+                    maxHeight = 350.dp
+                )
+            )
         }
     }
 
@@ -87,7 +103,7 @@ fun ProfileDialog(
                     user = user,
                     containerColor = MaterialTheme.colorScheme.primary,
                     textColor = MaterialTheme.colorScheme.onPrimary,
-                    onAvatarClick = { pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) }
+                    onAvatarClick = { pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
                 )
                 Icon(
                     painter = painterResource(R.drawable.middle_icon),
@@ -101,23 +117,6 @@ fun ProfileDialog(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     textColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
-            }
-
-            if (eventList.isNotEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .padding(top = 35.dp, start = 15.dp, end = 15.dp, bottom = 15.dp)
-                ) {
-                    eventList.forEach {
-                        EventCard(it.title, it.date, it.iconId)
-                    }
-                }
             }
         }
     }
@@ -137,10 +136,6 @@ fun ProfileCard(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .size((containerWidth / 2) - 5.dp)
-//            .border(
-//                width = 1.dp,
-//                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
-//            )
             .padding(10.dp)
     ) {
         if (user?.avatarFile == null) {
@@ -161,18 +156,57 @@ fun ProfileCard(
                 )
             }
         } else {
-//            GlideImage(
-//                model = user.getAvatarUrl(),
-//                contentDescription = "user avatar",
-//                contentScale = Crop,
-//                modifier = Modifier
-//                    .size(70.dp)
-//                    .clip(RoundedCornerShape(10.dp))
-//                    .clickable(enabled = true, onClick = { onAvatarClick() })
-//            )
+            GlideImage(
+                model = user.avatarPath,
+                contentDescription = "user avatar",
+                contentScale = Crop,
+                modifier = Modifier
+                    .size(70.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .clickable(enabled = true, onClick = { onAvatarClick() })
+            )
         }
 
         Text(text = user?.displayName ?: "", fontSize = 18.sp, modifier = Modifier.padding(top = 10.dp))
+    }
+}
+
+@OptIn(ExperimentalGlideComposeApi::class)
+@Composable
+fun AvatarPreview(
+    imageUri: Uri?,
+    onSaveClick: () -> Unit,
+    onCancelClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Dialog(onDismissRequest = { onCancelClick() }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Column(
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = modifier
+                .fillMaxSize()
+                .background(color = MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(10.dp))
+        ) {
+            GlideImage(
+                model = imageUri,
+                contentDescription = "user avatar preview",
+                contentScale = Crop,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(20.dp)
+                    .clip(RoundedCornerShape(10.dp))
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceAround,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 15.dp)
+            ) {
+                TextButton(onClick = { onSaveClick() }) { Text(text = "Save") }
+                TextButton(onClick = { onCancelClick() }) { Text(text = "Cancel") }
+            }
+        }
     }
 }
 

@@ -1,25 +1,30 @@
 package me.linhvo.ittakestwo.home
 
 import android.annotation.SuppressLint
+import android.content.Context
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.layout.ContentScale.Companion.Crop
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
+import com.bumptech.glide.integration.compose.GlideImage
 import me.linhvo.ittakestwo.database.model.User
 import me.linhvo.ittakestwo.profile.AddPartnerDialog
 import me.linhvo.ittakestwo.profile.ProfileDialog
@@ -43,10 +48,10 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
             AddPartnerDialog(onEmailSubmit = viewModel::addPartner, onDismissRequest = viewModel::closeProfile)
         } else {
             ProfileDialog(
+                uploadAvatar = viewModel::uploadAvatar,
                 onDismissRequest = viewModel::closeProfile,
                 user = uiState.user,
                 partner = uiState.partner,
-                uploadAvatar = viewModel::uploadAvatar
             )
         }
     }
@@ -65,7 +70,7 @@ fun HomeContent(
     user: User?,
     partner: User?,
     backgroundImageUrl: String?,
-    signOut: () -> Unit,
+    signOut: (Context) -> Unit,
     onProfileClick: () -> Unit,
 ) {
 
@@ -101,7 +106,8 @@ fun HomeContent(
                 .width(100.dp)
                 .clickable(enabled = true, onClick = { onProfileClick() })
         ) {
-            if (partner?.avatarFile == null) {
+            // partner's profile picture
+            if (partner?.avatarPath == null) {
                 Box(
                     modifier = Modifier
                         .offset(x = 40.dp)
@@ -122,20 +128,20 @@ fun HomeContent(
                     )
                 }
             } else {
-//                GlideImage(
-//                    model = partner.getAvatarUrl(),
-//                    contentDescription = "user avatar",
-//                    contentScale = Crop,
-//                    modifier = Modifier
-//                        .offset(x = 40.dp)
-//                        .size(55.dp)
-//                        .clip(CircleShape)
-//                        .border(width = 1.5.dp, color = MaterialTheme.colorScheme.background, shape = CircleShape)
-//                )
+                GlideImage(
+                    model = partner.avatarPath,
+                    contentDescription = "user avatar",
+                    contentScale = Crop,
+                    modifier = Modifier
+                        .offset(x = 40.dp)
+                        .size(55.dp)
+                        .clip(CircleShape)
+                        .border(width = 1.5.dp, color = MaterialTheme.colorScheme.background, shape = CircleShape)
+                )
             }
 
             // user's profile picture
-            if (user?.avatarFile == null) {
+            if (user?.avatarPath == null) {
                 Box(
                     modifier = Modifier
                         .size(55.dp)
@@ -155,18 +161,19 @@ fun HomeContent(
                     )
                 }
             } else {
-//                GlideImage(
-//                    model = user.getAvatarUrl(),
-//                    contentDescription = "user avatar",
-//                    contentScale = Crop,
-//                    modifier = Modifier
-//                        .size(55.dp)
-//                        .clip(CircleShape)
-//                        .border(width = 1.5.dp, color = MaterialTheme.colorScheme.background, shape = CircleShape)
-//                )
+                GlideImage(
+                    model = user.avatarPath,
+                    contentDescription = "user avatar",
+                    contentScale = Crop,
+                    modifier = Modifier
+                        .size(55.dp)
+                        .clip(CircleShape)
+                        .border(width = 1.5.dp, color = MaterialTheme.colorScheme.background, shape = CircleShape)
+                )
             }
         }
 
-        Button(onClick = { signOut() }) { Text(text = "Sign Out") }
+        val context = LocalContext.current
+        TextButton(onClick = { signOut(context) }) { Text(text = "Sign Out") }
     }
 }

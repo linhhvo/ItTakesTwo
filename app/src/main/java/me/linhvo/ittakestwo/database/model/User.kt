@@ -12,6 +12,7 @@ data class User(
     val email: String,
     val displayName: String,
     var avatarFile: String? = null,
+    var avatarPath: String? = null,
     var updatedAt: Instant,
     val fid: String? = null,
     val fcmToken: String? = null

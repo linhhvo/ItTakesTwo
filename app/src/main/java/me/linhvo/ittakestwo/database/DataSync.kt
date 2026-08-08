@@ -18,7 +18,6 @@ class DataSyncRepository @Inject constructor(
 ) {
     suspend fun initializeData(currentUser: String) {
         try {
-            Log.d("debug_data", "initializing data...")
             // fetch current user and insert into Room
             userRepository.populateUserToLocalDatabase(currentUser)
 

@@ -34,7 +34,7 @@ class AuthRepository @Inject constructor(
             id = currentUserId,
             email = email,
             displayName = name,
-            updatedAt = authNetworkDataSource.currentUser?.updatedAt ?: Clock.System.now(),
+            updatedAt = Clock.System.now(),
             fid = Firebase.installations.id.await(),
             fcmToken = Firebase.messaging.token.await()
         )

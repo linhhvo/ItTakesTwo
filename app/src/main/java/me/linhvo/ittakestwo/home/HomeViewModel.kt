@@ -17,6 +17,8 @@ import me.linhvo.ittakestwo.repository.AuthRepository
 import me.linhvo.ittakestwo.repository.PairingRepository
 import me.linhvo.ittakestwo.repository.UserRepository
 import javax.inject.Inject
+import kotlin.io.path.ExperimentalPathApi
+import kotlin.io.path.deleteRecursively
 
 data class HomeUiState(
     val user: User? = null,
@@ -60,10 +62,12 @@ class HomeViewModel @Inject constructor(
             initialValue = HomeUiState()
         )
 
-    fun signOut() {
+    @OptIn(ExperimentalPathApi::class)
+    fun signOut(context: Context) {
         viewModelScope.launch {
             try {
                 authRepository.signOut()
+                context.getExternalFilesDir(null)?.toPath()?.deleteRecursively()
             } catch (e: Exception) {
                 _errorMessage.value = when (e) {
                     is AuthRestException -> e.errorDescription
@@ -84,15 +88,18 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun uploadAvatar(context: Context, avatarUri: Uri) {
-        viewModelScope.launch {
-            try {
-//                userRepository.uploadUserAvatar(context, avatarUri)
-            } catch (e: Exception) {
-                if (e !is IllegalStateException) {
-                    _errorMessage.value = e.message
-                } else {
-                    Log.d("debug_uploadAvatar", e.message.toString())
+    fun uploadAvatar(avatarUri: Uri?) {
+        if (avatarUri != null) {
+            viewModelScope.launch {
+                try {
+                    userRepository.updateUserAvatar(userId = _currentUserId, avatarUri = avatarUri)
+                } catch (e: Exception) {
+                    if (e !is IllegalStateException) {
+                        _errorMessage.value = e.message
+                        Log.d("debug_uploadAvatar_Error", e.toString())
+                    } else {
+                        Log.d("debug_uploadAvatar_Error", e.toString())
+                    }
                 }
             }
         }
