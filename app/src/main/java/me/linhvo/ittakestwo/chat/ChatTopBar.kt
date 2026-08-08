@@ -5,18 +5,24 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale.Companion.Crop
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
+import com.bumptech.glide.integration.compose.GlideImage
 import me.linhvo.ittakestwo.R
 import me.linhvo.ittakestwo.database.model.User
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalGlideComposeApi::class)
 @Composable
 fun ChatTopBar(
     partner: User?,
@@ -32,9 +38,22 @@ fun ChatTopBar(
             titleContentColor = MaterialTheme.colorScheme.onSurface
         ),
         title = {
-            Text(
-                text = partner?.displayName ?: "No partner", fontSize = 25.sp, fontWeight = FontWeight.SemiBold
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (partner?.avatarPath != null) {
+                    GlideImage(
+                        model = partner.avatarPath,
+                        contentDescription = "user avatar",
+                        contentScale = Crop,
+                        modifier = Modifier
+                            .size(35.dp)
+                            .clip(CircleShape)
+                    )
+                }
+
+                Text(
+                    text = partner?.displayName ?: "No partner", fontSize = 25.sp, fontWeight = FontWeight.SemiBold
+                )
+            }
         },
 
         navigationIcon = {

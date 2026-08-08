@@ -106,7 +106,8 @@ fun HomeContent(
                 .width(100.dp)
                 .clickable(enabled = true, onClick = { onProfileClick() })
         ) {
-            if (partner?.avatarFile == null) {
+            // partner's profile picture
+            if (partner?.avatarPath == null) {
                 Box(
                     modifier = Modifier
                         .offset(x = 40.dp)
@@ -140,7 +141,7 @@ fun HomeContent(
             }
 
             // user's profile picture
-            if (user?.avatarFile == null) {
+            if (user?.avatarPath == null) {
                 Box(
                     modifier = Modifier
                         .size(55.dp)
