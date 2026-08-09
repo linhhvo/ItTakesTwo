@@ -19,13 +19,17 @@ import androidx.compose.ui.unit.dp
 fun NotificationPermissionAlert(onAllowClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         modifier = Modifier
             .background(color = MaterialTheme.colorScheme.surfaceContainerHighest)
             .fillMaxWidth()
             .padding(horizontal = 15.dp, vertical = 5.dp)
     ) {
-        Text(text = "Get notified when you receive a message", fontWeight = FontWeight.Light)
+        Text(
+            text = "Get notified when you receive a message",
+            fontWeight = FontWeight.Light,
+            modifier = Modifier.weight(1f)
+        )
         Text(
             text = "Allow",
             fontWeight = FontWeight.SemiBold,
