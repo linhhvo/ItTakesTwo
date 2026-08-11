@@ -2,7 +2,6 @@ package me.linhvo.ittakestwo.chat
 
 import android.Manifest
 import android.os.Build
-import android.util.Log
 import android.widget.photopicker.EmbeddedPhotoPickerFeatureInfo
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
@@ -20,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import me.linhvo.ittakestwo.database.model.Attachment
 import me.linhvo.ittakestwo.database.model.Message
 import me.linhvo.ittakestwo.ui.components.Dialog
 import me.linhvo.ittakestwo.util.parseDateTimeToLocalTZ
@@ -45,6 +46,7 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () ->
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val activity = LocalActivity.current
+    val context = LocalContext.current
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -72,8 +74,8 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () ->
 
     val mediaPickerState = rememberEmbeddedPhotoPickerState(
         onSelectionComplete = { scope.launch { scaffoldState.bottomSheetState.hide() } },
-        onUriPermissionGranted = { Log.d("debug_media", "add $it") },
-        onUriPermissionRevoked = { Log.d("debug_media", "remove $it") }
+        onUriPermissionGranted = { viewModel.onFileSelection(context, it) },
+        onUriPermissionRevoked = { viewModel.onFileDeselection(it) }
     )
 
     val bottomPadding = if (!scaffoldState.bottomSheetState.isVisible && WindowInsets.isImeVisible) {
@@ -102,7 +104,7 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () ->
             )
         },
         scaffoldState = scaffoldState,
-        sheetPeekHeight = if (scaffoldState.bottomSheetState.isVisible) 400.dp else 0.dp,
+        sheetPeekHeight = if (scaffoldState.bottomSheetState.isVisible) 350.dp else 0.dp,
         sheetMaxWidth = LocalConfiguration.current.screenWidthDp.dp,
         sheetContent = {
             EmbeddedPhotoPicker(
@@ -134,12 +136,18 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () ->
             InputBar(
                 userInput = uiState.userInput,
                 onInputChange = viewModel::onInputChange,
-                sendMessage = viewModel::sendMessage,
+                sendMessage = {
+                    viewModel.sendMessage()
+                    scope.launch {
+                        mediaPickerState.deselectUris(mediaPickerState.selectedMedia.toList())
+                    }
+                },
                 modifier = Modifier.padding(bottom = 10.dp),
                 toggleMediaPicker = {
                     scope.launch {
                         if (scaffoldState.bottomSheetState.isVisible) {
                             scaffoldState.bottomSheetState.hide()
+                            mediaPickerState.deselectUris(mediaPickerState.selectedMedia.toList())
                         } else {
                             scaffoldState.bottomSheetState.partialExpand()
                         }
@@ -149,6 +157,7 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () ->
                     scope.launch {
                         if (scaffoldState.bottomSheetState.isVisible) {
                             scaffoldState.bottomSheetState.hide()
+                            mediaPickerState.deselectUris(mediaPickerState.selectedMedia.toList())
                         }
                     }
                 }
