@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
 import kotlinx.coroutines.launch
+import me.linhvo.ittakestwo.database.model.Attachment
 import me.linhvo.ittakestwo.database.model.Message
 import me.linhvo.ittakestwo.database.model.User
 import me.linhvo.ittakestwo.datastore.ConfigsDataSource
@@ -21,7 +22,8 @@ import javax.inject.Inject
 data class ChatUiState(
     val user: User? = null,
     val partner: User? = null,
-    val chatMessages: List<Message> = emptyList(),
+//    val chatMessages: List<Message> = emptyList(),
+    val chatMessages: Map<Message, List<Attachment>?> = emptyMap(),
 //    val selectedFiles: Set<Uri> = emptySet(),
     val userInput: String = "",
     val errorMessage: String? = null,
@@ -80,6 +82,9 @@ class ChatViewModel @Inject constructor(
         }
     }
 
+    suspend fun getMessageAttachments(messageId: String) =
+        chatRepository.getMessageAttachments(messageId)
+
     fun onFileDeselection(fileUris: List<Uri>) {
         _selectedFiles.value.filterKeys { fileUris.contains(it) }
     }
@@ -96,6 +101,7 @@ class ChatViewModel @Inject constructor(
                     attachments = _selectedFiles.value.values.toSet()
                 )
                 _userInput.value = ""
+                _selectedFiles.value.clear()
             } catch (e: Exception) {
                 _errorMessage.value = e.message
             }

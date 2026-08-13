@@ -70,7 +70,7 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () ->
     val scope = rememberCoroutineScope()
 
     val mediaPickerInfo =
-        EmbeddedPhotoPickerFeatureInfo.Builder().setMaxSelectionLimit(10).build()
+        EmbeddedPhotoPickerFeatureInfo.Builder().setMaxSelectionLimit(10).setOrderedSelection(true).build()
 
     val mediaPickerState = rememberEmbeddedPhotoPickerState(
         onSelectionComplete = { scope.launch { scaffoldState.bottomSheetState.hide() } },
@@ -130,6 +130,7 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () ->
             }
             ChatContent(
                 messages = uiState.chatMessages,
+                getAttachments = viewModel::getMessageAttachments,
                 markAsRead = viewModel::markAsRead,
                 modifier = Modifier.weight(1f)
             )
@@ -168,12 +169,16 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () ->
 
 @Composable
 fun ChatContent(
-    messages: List<Message>,
+//    messages: List<Message>,
+    messages: Map<Message, List<Attachment>?>,
+    getAttachments: suspend (String) -> List<Attachment>?,
     markAsRead: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val screenWidth = LocalConfiguration.current.screenWidthDp
     val listState = rememberLazyListState()
+
+    val messageList = messages.keys.toList()
 
     LaunchedEffect(messages.size) {
         if (listState.firstVisibleItemIndex <= 1) {
@@ -198,8 +203,8 @@ fun ChatContent(
             .padding(top = 0.dp, start = 20.dp, end = 20.dp, bottom = 10.dp)
     ) {
         itemsIndexed(
-            items = messages, key = { _, message -> message.id }) { index, currentMessage ->
-            val prevMessage = messages.getOrNull(index + 1)
+            items = messageList, key = { _, message -> message.id }) { index, currentMessage ->
+            val prevMessage = messageList.getOrNull(index + 1)
             val isPrevMessageBySameSender = prevMessage?.senderId == currentMessage.senderId
 
             val currentMessageSentAt = parseDateTimeToLocalTZ(currentMessage.sentAt!!)
@@ -228,7 +233,11 @@ fun ChatContent(
                 if (prevMessage != null && !isPrevMessageBySameSender) {
                     Spacer(modifier = Modifier.height(7.dp))
                 }
-                Message(currentMessage)
+                Message(
+                    currentMessage,
+//                    getAttachments)
+                    messages[currentMessage]
+                )
             }
         }
     }

@@ -5,12 +5,15 @@ import android.os.Environment
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import me.linhvo.ittakestwo.R
 import me.linhvo.ittakestwo.common.ApplicationScope
 import me.linhvo.ittakestwo.database.dao.AttachmentDao
 import me.linhvo.ittakestwo.database.dao.MessageDao
+import me.linhvo.ittakestwo.database.model.Attachment
 import me.linhvo.ittakestwo.database.model.Message
 import me.linhvo.ittakestwo.network.datasource.MessageNetworkDataSource
 import me.linhvo.ittakestwo.network.model.NetworkAttachment
@@ -31,7 +34,19 @@ class ChatRepository @Inject constructor(
 ) {
     private val imageSuffix = appContext.resources.getString(R.string.image_file_suffix)
 
-    fun getMessageListStream(): Flow<List<Message>> = messageDao.observeMessagesOrderByLatest()
+//    fun getMessageListStream(): Flow<List<Message>> = messageDao.observeMessagesOrderByLatest()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun getMessageListStream(): Flow<Map<Message, List<Attachment>?>> =
+        messageDao.observeMessagesOrderByLatest().map { messages ->
+            messages.associateWith { message ->
+                if (message.attachments) {
+                    attachmentDao.loadAttachments(message.id)
+                } else {
+                    null
+                }
+            }
+        }
 
     suspend fun getMessageAttachments(messageId: String) =
         attachmentDao.loadAttachments(messageId)
@@ -52,7 +67,6 @@ class ChatRepository @Inject constructor(
             }
 
             if (attachments.isNotEmpty()) {
-                Log.d("debug_attachments", attachments.toString())
                 attachments.forEachIndexed { index, byteArray ->
                     val fileName = "${addedMessage.id}_$index$imageSuffix"
 
