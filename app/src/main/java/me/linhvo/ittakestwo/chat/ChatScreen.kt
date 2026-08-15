@@ -130,7 +130,6 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () ->
             }
             ChatContent(
                 messages = uiState.chatMessages,
-                getAttachments = viewModel::getMessageAttachments,
                 markAsRead = viewModel::markAsRead,
                 modifier = Modifier.weight(1f)
             )
@@ -169,9 +168,7 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () ->
 
 @Composable
 fun ChatContent(
-//    messages: List<Message>,
     messages: Map<Message, List<Attachment>?>,
-    getAttachments: suspend (String) -> List<Attachment>?,
     markAsRead: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -235,7 +232,6 @@ fun ChatContent(
                 }
                 Message(
                     currentMessage,
-//                    getAttachments)
                     messages[currentMessage]
                 )
             }

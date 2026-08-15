@@ -7,7 +7,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import me.linhvo.ittakestwo.R
 import me.linhvo.ittakestwo.common.ApplicationScope
@@ -34,17 +36,18 @@ class ChatRepository @Inject constructor(
 ) {
     private val imageSuffix = appContext.resources.getString(R.string.image_file_suffix)
 
-//    fun getMessageListStream(): Flow<List<Message>> = messageDao.observeMessagesOrderByLatest()
-
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getMessageListStream(): Flow<Map<Message, List<Attachment>?>> =
-        messageDao.observeMessagesOrderByLatest().map { messages ->
-            messages.associateWith { message ->
-                if (message.attachments) {
-                    attachmentDao.loadAttachments(message.id)
+        messageDao.observeMessagesOrderByLatest().flatMapLatest { messages ->
+            val attachments = messages.map { message ->
+                if (!message.attachments) {
+                    flowOf(null)
                 } else {
-                    null
+                    attachmentDao.observeAttachments(message.id)
                 }
+            }
+            combine(attachments) { attachments ->
+                messages.zip(attachments).toMap()
             }
         }
 

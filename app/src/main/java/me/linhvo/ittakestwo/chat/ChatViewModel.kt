@@ -22,9 +22,7 @@ import javax.inject.Inject
 data class ChatUiState(
     val user: User? = null,
     val partner: User? = null,
-//    val chatMessages: List<Message> = emptyList(),
     val chatMessages: Map<Message, List<Attachment>?> = emptyMap(),
-//    val selectedFiles: Set<Uri> = emptySet(),
     val userInput: String = "",
     val errorMessage: String? = null,
     val showNotiPermissionRequest: Boolean = false
@@ -59,8 +57,6 @@ class ChatViewModel @Inject constructor(
                 errorMessage = errorMessage,
                 showNotiPermissionRequest = showPermissionRequest
             )
-//        }.combine(_selectedFiles) { uiState, selectedFiles ->
-//            uiState.copy(selectedFiles = selectedFiles)
         }.catch {
             emit(ChatUiState(errorMessage = it.message))
         }.stateIn(
@@ -81,9 +77,6 @@ class ChatViewModel @Inject constructor(
             }
         }
     }
-
-    suspend fun getMessageAttachments(messageId: String) =
-        chatRepository.getMessageAttachments(messageId)
 
     fun onFileDeselection(fileUris: List<Uri>) {
         _selectedFiles.value.filterKeys { fileUris.contains(it) }
