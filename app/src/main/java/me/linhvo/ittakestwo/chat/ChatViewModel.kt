@@ -91,13 +91,19 @@ class ChatViewModel @Inject constructor(
                     recipientId = pairingRepository.getPartnerId()
                         ?: throw IllegalStateException("Partner is not available"),
                     content = cleanInput,
-                    attachments = _selectedFiles.value.values.toSet()
+                    byteArrays = _selectedFiles.value.values.toSet()
                 )
                 _userInput.value = ""
                 _selectedFiles.value.clear()
             } catch (e: Exception) {
                 _errorMessage.value = e.message
             }
+        }
+    }
+
+    fun downloadAttachments(attachments: List<Attachment>?) {
+        viewModelScope.launch {
+            chatRepository.downloadAttachments(attachments)
         }
     }
 

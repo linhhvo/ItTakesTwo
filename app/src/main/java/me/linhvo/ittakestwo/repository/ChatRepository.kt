@@ -1,7 +1,6 @@
 package me.linhvo.ittakestwo.repository
 
 import android.content.Context
-import android.os.Environment
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -39,27 +38,28 @@ class ChatRepository @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getMessageListStream(): Flow<Map<Message, List<Attachment>?>> =
         messageDao.observeMessagesOrderByLatest().flatMapLatest { messages ->
-            val attachments = messages.map { message ->
-                if (!message.attachments) {
-                    flowOf(null)
-                } else {
-                    attachmentDao.observeAttachments(message.id)
+            if (messages.isEmpty()) {
+                flowOf(emptyMap())
+            } else {
+                val attachments = messages.map { message ->
+                    if (!message.attachments) {
+                        flowOf(null)
+                    } else {
+                        attachmentDao.observeAttachments(message.id)
+                    }
                 }
-            }
-            combine(attachments) { attachments ->
-                messages.zip(attachments).toMap()
+                combine(attachments) { attachments ->
+                    messages.zip(attachments).toMap()
+                }
             }
         }
 
-    suspend fun getMessageAttachments(messageId: String) =
-        attachmentDao.loadAttachments(messageId)
-
-    fun addNewMessage(senderId: String, recipientId: String, content: String, attachments: Set<ByteArray?>) {
+    fun addNewMessage(senderId: String, recipientId: String, content: String, byteArrays: Set<ByteArray?>) {
         val newMessage = NetworkMessage(
             senderId = senderId,
             recipientId = recipientId,
             content = content,
-            attachments = attachments.isNotEmpty()
+            attachments = byteArrays.isNotEmpty()
         )
 
         appScope.launch {
@@ -69,32 +69,32 @@ class ChatRepository @Inject constructor(
                 messageDao.upsertMessage(message)
             }
 
-            if (attachments.isNotEmpty()) {
-                attachments.forEachIndexed { index, byteArray ->
+            val attachments = mutableListOf<Attachment>()
+
+            if (byteArrays.isNotEmpty()) {
+                byteArrays.forEachIndexed { index, byteArray ->
                     val fileName = "${addedMessage.id}_$index$imageSuffix"
 
-                    val dirPath =
-                        storageRepository.getDataDirPath(appContext, Environment.DIRECTORY_PICTURES)
-                            ?.let { it + appContext.resources.getString(R.string.message_attachment_dir) }
+                    storageRepository.saveAndUploadFile(
+                        bucketId = "messages",
+                        fileName = fileName,
+                        dirPath = storageRepository.messageAttachmentDirPath,
+                        byteArray = byteArray
+                    )
 
-                    try {
-                        storageRepository.saveAndUploadFile(
-                            bucketId = "messages",
-                            fileName = fileName,
-                            dirPath = dirPath,
-                            byteArray = byteArray
+                    messageNetworkDataSource.addAttachment(
+                        NetworkAttachment(
+                            messageId = addedMessage.id,
+                            fileName = fileName
                         )
-                    } catch (e: Exception) {
-                        Log.d("debug_addMessage_error", e.toString())
-                    } finally {
-                        val newAttachment = NetworkAttachment(messageId = addedMessage.id, fileName = fileName)
-                        messageNetworkDataSource.addAttachment(newAttachment).let {
-                            val attachment = it.toDomainModel()
-                            attachment.filePath = "$dirPath/$fileName"
-                            attachmentDao.addAttachment(attachment)
-                        }
+                    ).let {
+                        val newAttachment = it.toDomainModel()
+                        newAttachment.filePath = "${storageRepository.messageAttachmentDirPath}/${it.fileName}"
+                        attachments += newAttachment
                     }
                 }
+                attachmentDao.insertAttachments(attachments)
+                messageNetworkDataSource.setAttachmentsReady(addedMessage.id!!)
             }
         }
     }
@@ -103,21 +103,56 @@ class ChatRepository @Inject constructor(
         messageDao.getUnreadMessages(userId).forEach {
             it.readAt = Clock.System.now()
             messageDao.upsertMessage(it)
-            messageNetworkDataSource.updateMessage(messageId = it.id, timestamp = it.readAt)
+            messageNetworkDataSource.updateMessageReadTime(messageId = it.id, timestamp = it.readAt)
+        }
+    }
+
+    suspend fun downloadAttachments(attachments: List<Attachment>?) {
+        attachments?.forEach {
+            storageRepository.downloadAndSaveFile(
+                bucketId = "messages",
+                fileName = it.fileName,
+                dirPath = storageRepository.messageAttachmentDirPath
+            )
         }
     }
 
     suspend fun populateMessagesToLocalDatabase(userId: String) {
-        messageNetworkDataSource.getMessages(userId).forEach {
-            messageDao.upsertMessage(it.toDomainModel(userId))
+        messageNetworkDataSource.getMessages(userId).forEach { networkMessage ->
+            val message = networkMessage.toDomainModel(userId)
+
+            if (networkMessage.attachments && networkMessage.attachmentsReady) {
+                messageNetworkDataSource.getAttachments(message.id).forEach { networkAttachment ->
+                    val attachment = networkAttachment.toDomainModel()
+
+                    attachment.filePath = "${storageRepository.messageAttachmentDirPath}/${attachment.fileName}"
+                    attachmentDao.insertAttachments(listOf(attachment))
+                }
+            }
+            messageDao.upsertMessage(message)
         }
         Log.d("debug_messages", "populated messages")
     }
 
     suspend fun syncMessages(currentUser: String) {
         Log.d("debug_messages", "syncing messages")
-        messageNetworkDataSource.getMessageStream(currentUser).collect {
-            messageDao.upsertMessage(it.toDomainModel(currentUser))
+        messageNetworkDataSource.getMessageStream(currentUser).collect { networkMessage ->
+            val message = networkMessage.toDomainModel(currentUser)
+
+            if (networkMessage.attachments && networkMessage.attachmentsReady) {
+                messageNetworkDataSource.getAttachments(message.id).forEach { networkAttachment ->
+                    if (networkAttachment.messageId == message.id) {
+                        val attachment = networkAttachment.toDomainModel()
+                        attachment.filePath = "${storageRepository.messageAttachmentDirPath}/${attachment.fileName}"
+
+                        attachmentDao.insertAttachments(listOf(attachment))
+                    }
+                }
+            }
+
+            if (networkMessage.attachments == networkMessage.attachmentsReady) {
+                messageDao.upsertMessage(message)
+            }
         }
     }
 }

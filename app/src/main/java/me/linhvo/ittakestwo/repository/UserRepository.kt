@@ -2,7 +2,6 @@ package me.linhvo.ittakestwo.repository
 
 import android.content.Context
 import android.net.Uri
-import android.os.Environment
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -26,7 +25,6 @@ class UserRepository @Inject constructor(
     private val userDao: UserDao,
     private val storageRepository: StorageRepository
 ) {
-    private val avatarDir = appContext.resources.getString(R.string.avatar_dir)
     private val imageSuffix = appContext.resources.getString(R.string.image_file_suffix)
     fun addNewUser(user: User) {
         appScope.launch {
@@ -37,27 +35,6 @@ class UserRepository @Inject constructor(
 
     suspend fun updateUserFid(userId: String, fid: String, fcmToken: String) {
         userNetworkDataSource.updateUserFid(userId, fid, fcmToken)
-    }
-
-    suspend fun populateUserToLocalDatabase(userId: String) {
-        val networkUser = userNetworkDataSource.getUser(userId)
-
-        if (networkUser != null) {
-            val user = networkUser.toDomainModel()
-
-            if (user.avatarFile != null) {
-                val dirPath = storageRepository.getDataDirPath(appContext, Environment.DIRECTORY_PICTURES)?.let {
-                    it + avatarDir
-                }
-                storageRepository.downloadAndSaveFile(
-                    bucketId = "avatars",
-                    fileName = user.avatarFile,
-                    dirPath = dirPath
-                )
-                user.avatarPath = dirPath + "/" + user.avatarFile
-            }
-            userDao.upsert(user)
-        }
     }
 
     suspend fun updateUserAvatar(userId: String, avatarUri: Uri) {
@@ -72,27 +49,41 @@ class UserRepository @Inject constructor(
             val byteArray =
                 appContext.contentResolver.openInputStream(avatarUri)?.use { it.buffered().readBytes() }
 
-            val dirPath =
-                storageRepository.getDataDirPath(appContext, Environment.DIRECTORY_PICTURES)?.let { it + avatarDir }
+            user.avatarPath = storageRepository.avatarDirPath + "/" + user.avatarFile
 
-            user.avatarPath = dirPath + "/" + user.avatarFile
+            storageRepository.saveAndUploadFile(
+                bucketId = "avatars",
+                fileName = user.avatarFile,
+                dirPath = storageRepository.avatarDirPath,
+                byteArray = byteArray
+            )
 
-            try {
-                storageRepository.saveAndUploadFile(
-                    bucketId = "avatars",
-                    fileName = user.avatarFile,
-                    dirPath = dirPath,
-                    byteArray = byteArray
-                )
-            } finally {
-                user.updatedAt = Clock.System.now()
-                userNetworkDataSource.upsertUser(user.toNetworkModel())
-                userDao.upsert(user)
-            }
+            user.updatedAt = Clock.System.now()
+            userNetworkDataSource.upsertUser(user.toNetworkModel())
+            userDao.upsert(user)
         }
     }
 
     fun getUserStream(userId: String): Flow<User?> = userDao.observeUser(userId)
+
+    suspend fun populateUserToLocalDatabase(userId: String) {
+        val networkUser = userNetworkDataSource.getUser(userId)
+
+        if (networkUser != null) {
+            val user = networkUser.toDomainModel()
+
+            if (user.avatarFile != null) {
+                storageRepository.downloadAndSaveFile(
+                    bucketId = "avatars",
+                    fileName = user.avatarFile,
+                    dirPath = storageRepository.avatarDirPath
+                )
+                user.avatarPath = storageRepository.avatarDirPath + "/" + user.avatarFile
+            }
+            userDao.upsert(user)
+        }
+    }
+
 
     suspend fun syncUsers(currentUser: String) {
         userDao.getUsers().forEach { localUser ->
@@ -107,18 +98,14 @@ class UserRepository @Inject constructor(
                     } else {
                         val user = networkUser.toDomainModel()
 
-                        val dirPath =
-                            storageRepository.getDataDirPath(appContext, Environment.DIRECTORY_PICTURES)?.let {
-                                it + avatarDir
-                            }
                         if (user.avatarFile != localUser.avatarFile) {
                             storageRepository.downloadAndSaveFile(
                                 bucketId = "avatars",
                                 fileName = user.avatarFile,
-                                dirPath = dirPath
+                                dirPath = storageRepository.avatarDirPath
                             )
                         }
-                        user.avatarPath = dirPath + "/" + user.avatarFile
+                        user.avatarPath = storageRepository.avatarDirPath + "/" + user.avatarFile
                         userDao.upsert(user)
                     }
                 }
@@ -126,16 +113,7 @@ class UserRepository @Inject constructor(
         }
         userNetworkDataSource.getUserStream(currentUser).collect {
             val user = it.toDomainModel()
-            user.avatarPath =
-                storageRepository.getDataDirPath(
-                    appContext,
-                    Environment.DIRECTORY_PICTURES
-                ) + avatarDir + "/" + user.avatarFile
-
-            val dirPath =
-                storageRepository.getDataDirPath(appContext, Environment.DIRECTORY_PICTURES)?.let { path ->
-                    path + avatarDir
-                }
+            user.avatarPath = storageRepository.avatarDirPath + "/" + user.avatarFile
 
             val oldUser = userDao.loadUser(user.id)
 
@@ -143,7 +121,7 @@ class UserRepository @Inject constructor(
                 storageRepository.downloadAndSaveFile(
                     bucketId = "avatars",
                     fileName = user.avatarFile,
-                    dirPath = dirPath
+                    dirPath = storageRepository.avatarDirPath
                 )
             }
             userDao.upsert(user)

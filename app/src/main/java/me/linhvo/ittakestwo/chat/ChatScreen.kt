@@ -130,6 +130,7 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () ->
             }
             ChatContent(
                 messages = uiState.chatMessages,
+                downloadAttachments = viewModel::downloadAttachments,
                 markAsRead = viewModel::markAsRead,
                 modifier = Modifier.weight(1f)
             )
@@ -169,6 +170,7 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () ->
 @Composable
 fun ChatContent(
     messages: Map<Message, List<Attachment>?>,
+    downloadAttachments: (List<Attachment>?) -> Unit,
     markAsRead: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -205,6 +207,13 @@ fun ChatContent(
             val isPrevMessageBySameSender = prevMessage?.senderId == currentMessage.senderId
 
             val currentMessageSentAt = parseDateTimeToLocalTZ(currentMessage.sentAt!!)
+
+            LaunchedEffect(messages.size) {
+                if (currentMessage.attachments) {
+                    //TODO: attachments should be a flow to update chat screen
+                    downloadAttachments(messages[currentMessage])
+                }
+            }
 
             Column {
                 if (prevMessage == null

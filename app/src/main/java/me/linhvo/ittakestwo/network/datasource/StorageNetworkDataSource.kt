@@ -19,13 +19,10 @@ class StorageNetworkDataSource @Inject constructor(private val supabase: Supabas
 
     suspend fun uploadFile(bucketId: String, fileName: String?, byteArray: ByteArray?) {
         if (fileName != null) {
-            val signedUrl = supabase.storage.from(bucketId).createSignedUploadUrl(fileName, upsert = true)
-
             byteArray?.let {
-                supabase.storage.from(bucketId)
-                    .uploadToSignedUrl(path = fileName, token = signedUrl.token, data = byteArray) {
-                        upsert = true
-                    }
+                supabase.storage.from(bucketId).upload(path = fileName, data = byteArray) {
+                    upsert = true
+                }
             }
         }
     }

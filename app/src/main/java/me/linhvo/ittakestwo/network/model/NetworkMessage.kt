@@ -15,6 +15,9 @@ data class NetworkMessage(
     val content: String,
     val attachments: Boolean = false,
 
+    @SerialName("attachments_ready")
+    var attachmentsReady: Boolean = false,
+
     @SerialName("sent_at")
     val sentAt: Instant? = null,
 

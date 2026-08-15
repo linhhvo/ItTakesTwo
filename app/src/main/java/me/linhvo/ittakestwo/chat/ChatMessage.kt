@@ -1,6 +1,5 @@
 package me.linhvo.ittakestwo.chat
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -13,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
@@ -26,6 +26,8 @@ import me.linhvo.ittakestwo.R
 import me.linhvo.ittakestwo.database.model.Attachment
 import me.linhvo.ittakestwo.database.model.Message
 import me.linhvo.ittakestwo.util.parseDateTimeToLocalTZ
+import java.nio.file.Files
+import java.nio.file.Paths
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
@@ -81,7 +83,16 @@ fun Message(
             }
 
             if (message.attachments && !attachments.isNullOrEmpty()) {
-                AttachmentGrid(screenWidth, attachments)
+                AttachmentGrid(
+                    screenWidth, attachments, modifier = Modifier
+                        .background(
+                            color = MaterialTheme.colorScheme.secondaryContainer, shape = RoundedCornerShape(
+                                topStart = 9.dp, topEnd = 9.dp, bottomStart = 9.dp, bottomEnd = 0.dp
+                            )
+                        )
+                        .padding(4.dp)
+                        .weight(1f, fill = false)
+                )
             }
         }
     } else {
@@ -111,7 +122,17 @@ fun Message(
             }
 
             if (message.attachments && !attachments.isNullOrEmpty()) {
-                AttachmentGrid(screenWidth, attachments)
+                AttachmentGrid(
+                    screenWidth, attachments,
+                    modifier = Modifier
+                        .background(
+                            color = MaterialTheme.colorScheme.secondary, shape = RoundedCornerShape(
+                                topStart = 9.dp, topEnd = 9.dp, bottomStart = 0.dp, bottomEnd = 9.dp
+                            )
+                        )
+                        .padding(4.dp)
+                        .weight(1f, fill = false)
+                )
             }
 
             val timestamp = parseDateTimeToLocalTZ(message.sentAt!!)
@@ -129,37 +150,46 @@ fun Message(
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
-fun AttachmentGrid(screenWidth: Int, attachments: List<Attachment>) {
+fun AttachmentGrid(screenWidth: Int, attachments: List<Attachment>, modifier: Modifier = Modifier) {
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(2.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
         maxItemsInEachRow = 3,
-        modifier = Modifier
-            .background(
-                color = MaterialTheme.colorScheme.secondaryContainer, shape = RoundedCornerShape(
-                    topStart = 9.dp, topEnd = 9.dp, bottomStart = 9.dp, bottomEnd = 0.dp
-                )
-            )
-            .padding(4.dp)
+        modifier = modifier
     ) {
         attachments.forEach { attachment ->
-            Log.d("debug_attachment", attachment.filePath.toString())
-            GlideImage(
-                model = attachment.filePath,
-                contentDescription = "message attachment",
-                contentScale = ContentScale.Crop,
-                modifier = if (attachments.size < 3) Modifier
-                    .widthIn(max = (screenWidth * .6).dp)
-                    .fillMaxWidth(1 / attachments.size.toFloat())
-                    .aspectRatio(1f)
-                    .clip(RoundedCornerShape(4.dp))
-                    .clickable(enabled = true, onClick = {})
-                else Modifier
-                    .fillMaxWidth(0.3f)
-                    .aspectRatio(1f)
-                    .clip(RoundedCornerShape(4.dp))
-                    .clickable(enabled = true, onClick = {})
-            )
+            if (Files.exists(Paths.get(attachment.filePath))) {
+                GlideImage(
+                    model = attachment.filePath,
+                    contentDescription = "message attachment",
+                    contentScale = ContentScale.Crop,
+                    modifier = if (attachments.size < 3) Modifier
+                        .widthIn(max = (screenWidth * .6).dp)
+                        .fillMaxWidth(1 / attachments.size.toFloat())
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(4.dp))
+                        .clickable(enabled = true, onClick = {})
+                    else Modifier
+                        .fillMaxWidth(0.3f)
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(4.dp))
+                        .clickable(enabled = true, onClick = {})
+                )
+            } else {
+                Spacer(
+                    modifier = if (attachments.size < 3) Modifier
+                        .widthIn(max = (screenWidth * .6).dp)
+                        .fillMaxWidth(1 / attachments.size.toFloat())
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(color = Color.Gray)
+                    else Modifier
+                        .fillMaxWidth(0.3f)
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(color = Color.Gray)
+                )
+            }
         }
     }
 }

@@ -57,9 +57,17 @@ class MessageNetworkDataSource @Inject constructor(
             select()
         }.decodeSingle<NetworkMessage>()
 
-    suspend fun updateMessage(messageId: String, timestamp: Instant?) {
+    suspend fun updateMessageReadTime(messageId: String, timestamp: Instant?) {
         supabase.from("chat_messages").update({
             set("read_at", timestamp)
+        }) {
+            filter { eq("id", messageId) }
+        }
+    }
+
+    suspend fun setAttachmentsReady(messageId: String) {
+        supabase.from("chat_messages").update({
+            set("attachments_ready", true)
         }) {
             filter { eq("id", messageId) }
         }
@@ -69,4 +77,10 @@ class MessageNetworkDataSource @Inject constructor(
         supabase.from("message_attachments").insert(attachment) {
             select()
         }.decodeSingle<NetworkAttachment>()
+
+    suspend fun getAttachments(messageId: String): List<NetworkAttachment> =
+        supabase.from("message_attachments").select {
+            filter { eq("message_id", messageId) }
+        }.decodeList<NetworkAttachment>()
+
 }
