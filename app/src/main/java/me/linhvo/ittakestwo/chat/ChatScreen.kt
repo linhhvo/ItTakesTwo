@@ -208,9 +208,8 @@ fun ChatContent(
 
             val currentMessageSentAt = parseDateTimeToLocalTZ(currentMessage.sentAt!!)
 
-            LaunchedEffect(messages.size) {
+            LaunchedEffect(messages[currentMessage]) {
                 if (currentMessage.attachments) {
-                    //TODO: attachments should be a flow to update chat screen
                     downloadAttachments(messages[currentMessage])
                 }
             }

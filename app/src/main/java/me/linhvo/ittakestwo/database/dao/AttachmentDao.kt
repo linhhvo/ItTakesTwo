@@ -1,9 +1,6 @@
 package me.linhvo.ittakestwo.database.dao
 
-import androidx.room3.Dao
-import androidx.room3.Insert
-import androidx.room3.OnConflictStrategy
-import androidx.room3.Query
+import androidx.room3.*
 import kotlinx.coroutines.flow.Flow
 import me.linhvo.ittakestwo.database.model.Attachment
 
@@ -15,6 +12,9 @@ interface AttachmentDao {
     @Query("select * from message_attachments where messageId = :messageId")
     fun observeAttachments(messageId: String): Flow<List<Attachment>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAttachments(attachments: List<Attachment>)
+
+    @Update
+    suspend fun updateAttachments(attachments: List<Attachment>)
 }

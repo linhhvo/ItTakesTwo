@@ -22,12 +22,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
+import com.bumptech.glide.integration.compose.placeholder
 import me.linhvo.ittakestwo.R
 import me.linhvo.ittakestwo.database.model.Attachment
 import me.linhvo.ittakestwo.database.model.Message
 import me.linhvo.ittakestwo.util.parseDateTimeToLocalTZ
-import java.nio.file.Files
-import java.nio.file.Paths
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
@@ -84,7 +83,9 @@ fun Message(
 
             if (message.attachments && !attachments.isNullOrEmpty()) {
                 AttachmentGrid(
-                    screenWidth, attachments, modifier = Modifier
+                    screenWidth,
+                    attachments,
+                    modifier = Modifier
                         .background(
                             color = MaterialTheme.colorScheme.secondaryContainer, shape = RoundedCornerShape(
                                 topStart = 9.dp, topEnd = 9.dp, bottomStart = 9.dp, bottomEnd = 0.dp
@@ -123,7 +124,8 @@ fun Message(
 
             if (message.attachments && !attachments.isNullOrEmpty()) {
                 AttachmentGrid(
-                    screenWidth, attachments,
+                    screenWidth,
+                    attachments,
                     modifier = Modifier
                         .background(
                             color = MaterialTheme.colorScheme.secondary, shape = RoundedCornerShape(
@@ -157,37 +159,36 @@ fun AttachmentGrid(screenWidth: Int, attachments: List<Attachment>, modifier: Mo
         maxItemsInEachRow = 3,
         modifier = modifier
     ) {
+        val componentModifier = if (attachments.size < 3) Modifier
+            .widthIn(max = (screenWidth * .6).dp)
+            .fillMaxWidth(1 / attachments.size.toFloat())
+            .aspectRatio(1f)
+            .clip(RoundedCornerShape(4.dp))
+        else Modifier
+            .fillMaxWidth(0.3f)
+            .aspectRatio(1f)
+            .clip(RoundedCornerShape(4.dp))
+
         attachments.forEach { attachment ->
-            if (Files.exists(Paths.get(attachment.filePath))) {
+            if (attachment.downloaded) {
                 GlideImage(
                     model = attachment.filePath,
                     contentDescription = "message attachment",
                     contentScale = ContentScale.Crop,
-                    modifier = if (attachments.size < 3) Modifier
-                        .widthIn(max = (screenWidth * .6).dp)
-                        .fillMaxWidth(1 / attachments.size.toFloat())
-                        .aspectRatio(1f)
-                        .clip(RoundedCornerShape(4.dp))
-                        .clickable(enabled = true, onClick = {})
-                    else Modifier
-                        .fillMaxWidth(0.3f)
-                        .aspectRatio(1f)
-                        .clip(RoundedCornerShape(4.dp))
-                        .clickable(enabled = true, onClick = {})
+                    modifier = componentModifier.clickable(enabled = true, onClick = {/*TODO*/ }),
+                    failure = placeholder {
+                        Spacer(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(1f)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(color = Color.Gray)
+                        )
+                    }
                 )
             } else {
                 Spacer(
-                    modifier = if (attachments.size < 3) Modifier
-                        .widthIn(max = (screenWidth * .6).dp)
-                        .fillMaxWidth(1 / attachments.size.toFloat())
-                        .aspectRatio(1f)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(color = Color.Gray)
-                    else Modifier
-                        .fillMaxWidth(0.3f)
-                        .aspectRatio(1f)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(color = Color.Gray)
+                    modifier = componentModifier.background(color = Color.Gray)
                 )
             }
         }

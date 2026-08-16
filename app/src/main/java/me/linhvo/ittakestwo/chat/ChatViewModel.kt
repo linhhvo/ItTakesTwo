@@ -79,7 +79,7 @@ class ChatViewModel @Inject constructor(
     }
 
     fun onFileDeselection(fileUris: List<Uri>) {
-        _selectedFiles.value.filterKeys { fileUris.contains(it) }
+        fileUris.forEach { _selectedFiles.value.remove(it) }
     }
 
     fun sendMessage() {

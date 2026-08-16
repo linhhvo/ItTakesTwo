@@ -20,6 +20,8 @@ import me.linhvo.ittakestwo.network.datasource.MessageNetworkDataSource
 import me.linhvo.ittakestwo.network.model.NetworkAttachment
 import me.linhvo.ittakestwo.network.model.NetworkMessage
 import me.linhvo.ittakestwo.network.model.toDomainModel
+import java.nio.file.Files
+import java.nio.file.Paths
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Clock
@@ -63,11 +65,7 @@ class ChatRepository @Inject constructor(
         )
 
         appScope.launch {
-            val addedMessage = messageNetworkDataSource.addMessage(newMessage).also {
-                val message = it.toDomainModel(senderId)
-                message.isSenderMe = true
-                messageDao.upsertMessage(message)
-            }
+            val addedMessage = messageNetworkDataSource.addMessage(newMessage)
 
             val attachments = mutableListOf<Attachment>()
 
@@ -93,6 +91,10 @@ class ChatRepository @Inject constructor(
                         attachments += newAttachment
                     }
                 }
+
+                val message = addedMessage.toDomainModel(senderId)
+                message.isSenderMe = true
+                messageDao.upsertMessage(message)
                 attachmentDao.insertAttachments(attachments)
                 messageNetworkDataSource.setAttachmentsReady(addedMessage.id!!)
             }
@@ -108,12 +110,15 @@ class ChatRepository @Inject constructor(
     }
 
     suspend fun downloadAttachments(attachments: List<Attachment>?) {
-        attachments?.forEach {
-            storageRepository.downloadAndSaveFile(
-                bucketId = "messages",
-                fileName = it.fileName,
-                dirPath = storageRepository.messageAttachmentDirPath
-            )
+        if (!attachments.isNullOrEmpty()) {
+            attachments.forEach {
+                storageRepository.downloadAndSaveFile(
+                    bucketId = "messages",
+                    fileName = it.fileName,
+                    dirPath = storageRepository.messageAttachmentDirPath
+                )
+            }
+            attachmentDao.updateAttachments(attachments.map { it.copy(downloaded = true) })
         }
     }
 
@@ -126,10 +131,16 @@ class ChatRepository @Inject constructor(
                     val attachment = networkAttachment.toDomainModel()
 
                     attachment.filePath = "${storageRepository.messageAttachmentDirPath}/${attachment.fileName}"
+                    if (Files.exists(Paths.get(attachment.filePath))) {
+                        attachment.downloaded = true
+                    }
                     attachmentDao.insertAttachments(listOf(attachment))
                 }
             }
-            messageDao.upsertMessage(message)
+
+            if (networkMessage.attachments == networkMessage.attachmentsReady) {
+                messageDao.upsertMessage(message)
+            }
         }
         Log.d("debug_messages", "populated messages")
     }
@@ -139,15 +150,18 @@ class ChatRepository @Inject constructor(
         messageNetworkDataSource.getMessageStream(currentUser).collect { networkMessage ->
             val message = networkMessage.toDomainModel(currentUser)
 
+            val newAttachments = mutableListOf<Attachment>()
             if (networkMessage.attachments && networkMessage.attachmentsReady) {
                 messageNetworkDataSource.getAttachments(message.id).forEach { networkAttachment ->
                     if (networkAttachment.messageId == message.id) {
                         val attachment = networkAttachment.toDomainModel()
                         attachment.filePath = "${storageRepository.messageAttachmentDirPath}/${attachment.fileName}"
 
-                        attachmentDao.insertAttachments(listOf(attachment))
+                        newAttachments += attachment
                     }
                 }
+                attachmentDao.insertAttachments(newAttachments)
+                downloadAttachments(newAttachments)
             }
 
             if (networkMessage.attachments == networkMessage.attachmentsReady) {

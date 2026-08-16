@@ -8,5 +8,6 @@ data class Attachment(
     @PrimaryKey val id: String,
     val messageId: String,
     val fileName: String,
-    var filePath: String? = null
+    var filePath: String? = null,
+    var downloaded: Boolean = false
 )
