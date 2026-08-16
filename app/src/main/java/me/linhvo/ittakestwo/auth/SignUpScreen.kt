@@ -68,7 +68,11 @@ fun SignUpContent(
             fontSize = 25.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 5.dp)
         )
         Text(text = "Create an account to continue", fontSize = 16.sp)
-        Column(modifier = Modifier.padding(top = 50.dp, bottom = 20.dp)) {
+        Column(
+            modifier = Modifier
+                .width(270.dp)
+                .padding(top = 50.dp, bottom = 20.dp)
+        ) {
             OutlinedTextField(
                 value = displayName,
                 leadingIcon = { Icon(painter = painterResource(R.drawable.person), contentDescription = "mail icon") },

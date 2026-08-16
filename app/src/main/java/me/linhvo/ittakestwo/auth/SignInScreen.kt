@@ -73,7 +73,11 @@ fun SignInContent(
             fontSize = 25.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 5.dp)
         )
 
-        Column(modifier = Modifier.padding(top = 50.dp, bottom = 20.dp)) {
+        Column(
+            modifier = Modifier
+                .width(270.dp)
+                .padding(top = 50.dp, bottom = 20.dp)
+        ) {
             OutlinedTextField(
                 value = email,
                 leadingIcon = { Icon(painter = painterResource(R.drawable.mail), contentDescription = "mail icon") },
@@ -84,7 +88,8 @@ fun SignInContent(
                     keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Next
                 ),
-                modifier = Modifier.padding(bottom = 10.dp),
+                modifier = Modifier
+                    .padding(bottom = 10.dp),
             )
             OutlinedSecureTextField(
                 state = passwordTextFieldState,
@@ -95,7 +100,7 @@ fun SignInContent(
                 keyboardOptions = KeyboardOptions.Default.copy(
                     imeAction = ImeAction.Done
                 ),
-                onKeyboardAction = { onSignInButtonClick(passwordTextFieldState.text) }
+                onKeyboardAction = { onSignInButtonClick(passwordTextFieldState.text) },
             )
         }
 
