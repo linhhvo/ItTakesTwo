@@ -25,15 +25,7 @@ interface MessageDao {
     fun observeMessagesOrderByLatest(): Flow<List<Message>>
 
     @Upsert
-    suspend fun upsert(message: Message)
-
-//    @Query(
-//        """
-//        update chat_messages set readAt = :timestamp
-//        where recipientId = :userId
-//    """
-//    )
-//    suspend fun updateReadTime(timestamp: Instant, userId: String): List<Message>
+    suspend fun upsertMessage(message: Message)
 
     @Query(
         """

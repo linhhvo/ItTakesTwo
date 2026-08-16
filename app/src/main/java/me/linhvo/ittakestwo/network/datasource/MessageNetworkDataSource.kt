@@ -11,8 +11,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import me.linhvo.ittakestwo.network.model.BroadcastResponse
+import me.linhvo.ittakestwo.network.model.NetworkAttachment
 import me.linhvo.ittakestwo.network.model.NetworkMessage
-import me.linhvo.ittakestwo.repository.PairingRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Instant
@@ -20,7 +20,6 @@ import kotlin.time.Instant
 @Singleton
 class MessageNetworkDataSource @Inject constructor(
     private val supabase: SupabaseClient,
-    private val pairingRepository: PairingRepository,
 ) {
 
     suspend fun getMessages(userId: String): List<NetworkMessage> =
@@ -46,7 +45,6 @@ class MessageNetworkDataSource @Inject constructor(
                 val res = Json.decodeFromJsonElement<BroadcastResponse>(payload)
                 val message = Json.decodeFromJsonElement<NetworkMessage>(res.record)
 
-//                Log.d("debug_newMessageInRepo", message.toString())
                 emit(message)
             }.collect()
         }.onCompletion {
@@ -59,7 +57,7 @@ class MessageNetworkDataSource @Inject constructor(
             select()
         }.decodeSingle<NetworkMessage>()
 
-    suspend fun updateMessage(messageId: String, timestamp: Instant?) {
+    suspend fun updateMessageReadTime(messageId: String, timestamp: Instant?) {
         supabase.from("chat_messages").update({
             set("read_at", timestamp)
         }) {
@@ -67,28 +65,22 @@ class MessageNetworkDataSource @Inject constructor(
         }
     }
 
-//    suspend fun getUnreadCount(userId: String) = withContext(Dispatchers.IO) {
-//        supabase.from("chat_messages").select {
-//            filter {
-//                and {
-//                    eq("recipient", userId)
-//                    exact("read_at", null)
-//                }
-//            }
-//            count(Count.EXACT)
-//        }.countOrNull() ?: 0
-//    }
+    suspend fun setAttachmentsReady(messageId: String) {
+        supabase.from("chat_messages").update({
+            set("attachments_ready", true)
+        }) {
+            filter { eq("id", messageId) }
+        }
+    }
 
-//    suspend fun updateReadTime(timestamp: Instant, userId: String) {
-//        supabase.from("chat_messages").update({
-//            set("read_at", timestamp)
-//        }) {
-//            filter {
-//                and {
-//                    eq("recipient", userId)
-//                    exact("read_at", null)
-//                }
-//            }
-//        }
-//    }
+    suspend fun addAttachment(attachment: NetworkAttachment): NetworkAttachment =
+        supabase.from("message_attachments").insert(attachment) {
+            select()
+        }.decodeSingle<NetworkAttachment>()
+
+    suspend fun getAttachments(messageId: String): List<NetworkAttachment> =
+        supabase.from("message_attachments").select {
+            filter { eq("message_id", messageId) }
+        }.decodeList<NetworkAttachment>()
+
 }

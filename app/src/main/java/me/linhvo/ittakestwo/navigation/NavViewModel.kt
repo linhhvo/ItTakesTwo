@@ -35,7 +35,7 @@ class NavViewModel @Inject constructor(
     suspend fun getUnreadCount() {
         chatRepository.getMessageListStream()
             .mapLatest { messages ->
-                messages.filter { !it.isSenderMe && it.readAt == null }.size
+                messages.filter { !it.key.isSenderMe && it.key.readAt == null }.size
             }
             .distinctUntilChanged()
             .collect {

@@ -20,7 +20,7 @@ val secrets = Properties().apply {
 android {
     namespace = "me.linhvo.ittakestwo"
     compileSdk {
-        version = release(36) {
+        version = release(37) {
             minorApiLevel = 1
         }
     }
@@ -101,6 +101,7 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.androidx.datastore)
     implementation(libs.google.protobuf.kotlin)
+    implementation(libs.androidx.photopicker.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

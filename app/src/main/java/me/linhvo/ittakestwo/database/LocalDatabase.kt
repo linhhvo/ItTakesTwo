@@ -4,9 +4,11 @@ import androidx.room3.ColumnTypeConverter
 import androidx.room3.ColumnTypeConverters
 import androidx.room3.Database
 import androidx.room3.RoomDatabase
+import me.linhvo.ittakestwo.database.dao.AttachmentDao
 import me.linhvo.ittakestwo.database.dao.MessageDao
 import me.linhvo.ittakestwo.database.dao.PairingDao
 import me.linhvo.ittakestwo.database.dao.UserDao
+import me.linhvo.ittakestwo.database.model.Attachment
 import me.linhvo.ittakestwo.database.model.Message
 import me.linhvo.ittakestwo.database.model.Pairing
 import me.linhvo.ittakestwo.database.model.User
@@ -16,7 +18,8 @@ import kotlin.time.Instant
     entities = [
         User::class,
         Pairing::class,
-        Message::class
+        Message::class,
+        Attachment::class
     ],
     version = 1,
     exportSchema = false
@@ -27,6 +30,7 @@ abstract class LocalDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun pairingDao(): PairingDao
     abstract fun messageDao(): MessageDao
+    abstract fun attachmentDao(): AttachmentDao
 }
 
 internal class Converters {

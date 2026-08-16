@@ -11,6 +11,7 @@ data class Message(
     val senderId: String,
     val recipientId: String,
     val content: String,
+    var attachments: Boolean = false,
     val sentAt: Instant? = null,
     var readAt: Instant? = null,
     var isSenderMe: Boolean
@@ -22,6 +23,7 @@ fun Message.toNetworkModel() =
         senderId = senderId,
         recipientId = recipientId,
         content = content,
+        attachments = attachments,
         sentAt = sentAt,
         readAt = readAt
     )

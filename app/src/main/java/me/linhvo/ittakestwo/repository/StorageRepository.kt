@@ -2,12 +2,15 @@ package me.linhvo.ittakestwo.repository
 
 import android.content.Context
 import android.os.Environment
+import android.util.Log
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.statement.HttpResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import me.linhvo.ittakestwo.R
 import me.linhvo.ittakestwo.network.datasource.StorageNetworkDataSource
 import java.io.File
 import java.io.FileOutputStream
@@ -18,12 +21,18 @@ import javax.inject.Singleton
 
 @Singleton
 class StorageRepository @Inject constructor(
-    private val storageNetworkDataSource: StorageNetworkDataSource
+    private val storageNetworkDataSource: StorageNetworkDataSource,
+    @ApplicationContext private val appContext: Context,
 ) {
+    val avatarDirPath: String
+        get() = getDataDirPath(Environment.DIRECTORY_PICTURES) + appContext.resources.getString(R.string.avatar_dir)
 
-    fun getDataDirPath(context: Context, type: String) =
+    val messageAttachmentDirPath: String
+        get() = getDataDirPath(Environment.DIRECTORY_PICTURES) + appContext.resources.getString(R.string.message_attachment_dir)
+
+    fun getDataDirPath(type: String) =
         if (Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED) {
-            context.getExternalFilesDir(type)?.path
+            appContext.getExternalFilesDir(type)?.path
         } else null
 
     suspend fun downloadFileFromNetwork(bucketId: String, fileName: String?): HttpResponse? =
@@ -47,6 +56,7 @@ class StorageRepository @Inject constructor(
 
     suspend fun downloadAndSaveFile(bucketId: String, fileName: String?, dirPath: String?) {
         if (!Files.exists(Paths.get(dirPath, fileName))) {
+            Log.d("debug_download", "downloading file $fileName")
             downloadFileFromNetwork(bucketId, fileName)?.let {
                 saveFileToLocalStorage(dirPath, fileName, it.body<ByteArray>())
             }

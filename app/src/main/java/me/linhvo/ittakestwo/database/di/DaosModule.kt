@@ -5,6 +5,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import me.linhvo.ittakestwo.database.LocalDatabase
+import me.linhvo.ittakestwo.database.dao.AttachmentDao
 import me.linhvo.ittakestwo.database.dao.MessageDao
 import me.linhvo.ittakestwo.database.dao.PairingDao
 import me.linhvo.ittakestwo.database.dao.UserDao
@@ -20,4 +21,7 @@ object DaosModule {
 
     @Provides
     fun provideMessageDao(database: LocalDatabase): MessageDao = database.messageDao()
+
+    @Provides
+    fun provideAttachmentDao(database: LocalDatabase): AttachmentDao = database.attachmentDao()
 }

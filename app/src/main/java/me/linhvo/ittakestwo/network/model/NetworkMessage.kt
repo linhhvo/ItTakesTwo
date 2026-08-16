@@ -13,6 +13,10 @@ data class NetworkMessage(
     @SerialName("recipient_id")
     val recipientId: String,
     val content: String,
+    val attachments: Boolean = false,
+
+    @SerialName("attachments_ready")
+    var attachmentsReady: Boolean = false,
 
     @SerialName("sent_at")
     val sentAt: Instant? = null,
@@ -27,6 +31,7 @@ fun NetworkMessage.toDomainModel(currentUser: String) =
         senderId = senderId,
         recipientId = recipientId,
         content = content,
+        attachments = attachments,
         sentAt = sentAt,
         readAt = readAt,
         isSenderMe = currentUser == senderId
