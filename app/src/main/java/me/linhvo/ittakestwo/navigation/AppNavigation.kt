@@ -27,6 +27,7 @@ import io.github.jan.supabase.auth.status.SessionStatus
 import me.linhvo.ittakestwo.auth.SignInScreen
 import me.linhvo.ittakestwo.auth.SignUpScreen
 import me.linhvo.ittakestwo.chat.ChatScreen
+import me.linhvo.ittakestwo.gallery.ViewerScreen
 import me.linhvo.ittakestwo.home.HomeScreen
 import me.linhvo.ittakestwo.settings.SettingsScreen
 
@@ -95,14 +96,23 @@ fun AppNavigation(viewModel: NavViewModel = hiltViewModel()) {
                     }
 
                     entry<Route.Chat> {
-                        ChatScreen(navigateToHome = dropUnlessResumed {
-                            backStack.clear()
-                            backStack.add(Route.Home)
-                        })
+                        ChatScreen(
+                            navigateToHome = dropUnlessResumed {
+                                backStack.clear()
+                                backStack.add(Route.Home)
+                            },
+                            openMediaViewer = {
+                                backStack.add(Route.MediaViewer(attachmentId = it))
+                            }
+                        )
                     }
+
+                    entry<Route.MediaViewer> { key ->
+                        ViewerScreen(attachmentId = key.attachmentId, onBack = { backStack.removeLastOrNull() })
+                    }
+
                     entry<Route.Settings> {
                         SettingsScreen()
-
                     }
                 }, transitionSpec = {
                     slideInHorizontally(

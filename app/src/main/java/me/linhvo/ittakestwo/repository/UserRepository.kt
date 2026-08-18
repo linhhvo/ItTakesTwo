@@ -26,6 +26,9 @@ class UserRepository @Inject constructor(
     private val storageRepository: StorageRepository
 ) {
     private val imageSuffix = appContext.resources.getString(R.string.image_file_suffix)
+
+    suspend fun getUser(userId: String) = userDao.loadUser(userId)
+
     fun addNewUser(user: User) {
         appScope.launch {
             userDao.upsert(user)

@@ -32,7 +32,8 @@ import me.linhvo.ittakestwo.util.parseDateTimeToLocalTZ
 @Composable
 fun Message(
     message: Message,
-    attachments: List<Attachment>?
+    attachments: List<Attachment>?,
+    openMediaViewer: (String) -> Unit
 ) {
     val screenWidth = LocalConfiguration.current.screenWidthDp
 
@@ -85,6 +86,7 @@ fun Message(
                 AttachmentGrid(
                     screenWidth,
                     attachments,
+                    openMediaViewer,
                     modifier = Modifier
                         .background(
                             color = MaterialTheme.colorScheme.secondaryContainer, shape = RoundedCornerShape(
@@ -126,6 +128,7 @@ fun Message(
                 AttachmentGrid(
                     screenWidth,
                     attachments,
+                    openMediaViewer,
                     modifier = Modifier
                         .background(
                             color = MaterialTheme.colorScheme.secondary, shape = RoundedCornerShape(
@@ -152,7 +155,12 @@ fun Message(
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
-fun AttachmentGrid(screenWidth: Int, attachments: List<Attachment>, modifier: Modifier = Modifier) {
+fun AttachmentGrid(
+    screenWidth: Int,
+    attachments: List<Attachment>,
+    openMediaViewer: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(2.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -175,7 +183,9 @@ fun AttachmentGrid(screenWidth: Int, attachments: List<Attachment>, modifier: Mo
                     model = attachment.filePath,
                     contentDescription = "message attachment",
                     contentScale = ContentScale.Crop,
-                    modifier = componentModifier.clickable(enabled = true, onClick = {/*TODO*/ }),
+                    modifier = componentModifier.clickable(
+                        enabled = true,
+                        onClick = { openMediaViewer(attachment.id) }),
                     failure = placeholder {
                         Spacer(
                             modifier = Modifier
