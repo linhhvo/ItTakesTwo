@@ -40,8 +40,8 @@ class ChatRepository @Inject constructor(
     suspend fun getMessageById(messageId: String) =
         messageDao.loadMessage(messageId)
 
-    suspend fun getAttachmentById(attachmentId: String) =
-        attachmentDao.loadAttachment(attachmentId)
+    fun getAttachmentListStream(): Flow<List<Attachment>> =
+        attachmentDao.observeAllAttachments()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getMessageListStream(): Flow<Map<Message, List<Attachment>?>> =

@@ -12,7 +12,7 @@ import me.linhvo.ittakestwo.repository.UserRepository
 import javax.inject.Inject
 
 data class MediaUiState(
-    val attachment: Attachment? = null,
+    val attachmentList: List<Attachment> = emptyList(),
     val senderName: String? = null,
     val shouldShowOverlay: Boolean = true
 )
@@ -22,14 +22,18 @@ class MediaViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
     private val userRepository: UserRepository
 ) : ViewModel() {
-    private val _attachment = MutableStateFlow<Attachment?>(null)
+    //    private val _targetAttachment = MutableStateFlow<Attachment?>(null)
     private val _senderName = MutableStateFlow<String?>(null)
     private val _shouldShowOverlay = MutableStateFlow(true)
 
     val uiState: StateFlow<MediaUiState> =
-        combine(_attachment, _shouldShowOverlay, _senderName) { attachment, shouldShowOverlay, senderName ->
+        combine(
+            chatRepository.getAttachmentListStream(),
+            _shouldShowOverlay,
+            _senderName
+        ) { attachmentList, shouldShowOverlay, senderName ->
             MediaUiState(
-                attachment = attachment,
+                attachmentList = attachmentList,
                 senderName = senderName,
                 shouldShowOverlay = shouldShowOverlay
             )
@@ -41,12 +45,10 @@ class MediaViewModel @Inject constructor(
             initialValue = MediaUiState()
         )
 
-    fun getAttachment(attachmentId: String) {
+    fun getSenderName(attachment: Attachment) {
         viewModelScope.launch {
-            _attachment.value = chatRepository.getAttachmentById(attachmentId)?.also {
-                chatRepository.getMessageById(it.messageId).let { message ->
-                    _senderName.value = userRepository.getUser(message.senderId)?.displayName
-                }
+            chatRepository.getMessageById(attachment.messageId).let { message ->
+                _senderName.value = userRepository.getUser(message.senderId)?.displayName
             }
         }
     }

@@ -108,7 +108,7 @@ fun AppNavigation(viewModel: NavViewModel = hiltViewModel()) {
                     }
 
                     entry<Route.MediaViewer> { key ->
-                        ViewerScreen(attachmentId = key.attachmentId, onBack = { backStack.removeLastOrNull() })
+                        ViewerScreen(targetAttachmentId = key.attachmentId, onBack = { backStack.removeLastOrNull() })
                     }
 
                     entry<Route.Settings> {
