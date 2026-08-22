@@ -1,7 +1,9 @@
 package me.linhvo.ittakestwo.gallery
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -13,11 +15,15 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.center
 import androidx.compose.ui.geometry.isSpecified
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.toSize
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
@@ -46,11 +52,12 @@ fun ViewerScreen(
                 viewModel.getSenderName(uiState.attachmentList[pageIndex])
             }
         }
-
         HorizontalPager(
             state = pagerState,
             reverseLayout = true,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .background(color = MaterialTheme.colorScheme.surface)
         ) { pageIndex ->
             val currentMedia = uiState.attachmentList[pageIndex]
             Box(
@@ -144,14 +151,14 @@ fun MediaContent(
         contentScale = ContentScale.Fit,
         modifier = Modifier
             .fillMaxSize()
-//            .onSizeChanged { size = it.toSize() }
-//            .transformable(state = state)
-//            .graphicsLayer(
-//                scaleX = scale,
-//                scaleY = scale,
-//                translationX = -offset.x * scale,
-//                translationY = -offset.y * scale,
-//                transformOrigin = TransformOrigin(0f, 0f)
-//            )
+            .onSizeChanged { size = it.toSize() }
+            .transformable(state = state, canPan = { scale != 1f })
+            .graphicsLayer(
+                scaleX = scale,
+                scaleY = scale,
+                translationX = -offset.x * scale,
+                translationY = -offset.y * scale,
+                transformOrigin = TransformOrigin(0f, 0f)
+            )
     )
 }
