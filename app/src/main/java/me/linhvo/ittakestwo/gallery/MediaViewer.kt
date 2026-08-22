@@ -40,7 +40,10 @@ fun ViewerScreen(
     targetAttachmentId: String,
     onBack: () -> Unit
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val currentMedia = uiState.targetAttachment
 
     if (uiState.attachmentList.isNotEmpty()) {
         val pagerState = rememberPagerState(
@@ -49,27 +52,19 @@ fun ViewerScreen(
 
         LaunchedEffect(pagerState) {
             snapshotFlow { pagerState.settledPage }.collect { pageIndex ->
-                viewModel.getSenderName(uiState.attachmentList[pageIndex])
+                viewModel.loadAttachment(uiState.attachmentList[pageIndex])
             }
         }
-        HorizontalPager(
-            state = pagerState,
-            reverseLayout = true,
-            modifier = Modifier
-                .fillMaxSize()
-                .background(color = MaterialTheme.colorScheme.surface)
-        ) { pageIndex ->
-            val currentMedia = uiState.attachmentList[pageIndex]
-            Box(
-                modifier = Modifier.clickable(
-                    enabled = true,
-                    onClick = { viewModel.toggleOverlay() },
-                    indication = null,
-                    interactionSource = null
-                )
-            ) {
-                MediaContent(currentMedia)
 
+        LaunchedEffect(uiState.statusMessage) {
+            if (uiState.statusMessage != null) {
+                snackbarHostState.showSnackbar(message = uiState.statusMessage!!)
+            }
+        }
+
+        Scaffold(
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+            topBar = {
                 if (uiState.shouldShowOverlay) {
                     TopAppBar(
                         navigationIcon = {
@@ -89,7 +84,7 @@ fun ViewerScreen(
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
-                                if (currentMedia.createdAt != null) {
+                                if (currentMedia?.createdAt != null) {
                                     val timestamp = parseDateTimeToLocalTZ(currentMedia.createdAt)
                                     Text(
                                         text = "${timestamp.day}-${"%02d".format(timestamp.month.number)}-${timestamp.year}" +
@@ -104,7 +99,10 @@ fun ViewerScreen(
                             containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.5f)
                         ),
                         actions = {
-                            IconButton(onClick = {/*TODO*/ }, modifier = Modifier.padding(end = 10.dp)) {
+                            IconButton(
+                                onClick = { viewModel.saveMedia(currentMedia?.fileName, currentMedia?.filePath) },
+                                modifier = Modifier.padding(end = 10.dp)
+                            ) {
                                 Icon(
                                     painter = painterResource(R.drawable.download_icon),
                                     contentDescription = "download icon",
@@ -114,6 +112,25 @@ fun ViewerScreen(
                             }
                         }
                     )
+                }
+            }) { _ ->
+            HorizontalPager(
+                state = pagerState,
+                reverseLayout = true,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color = MaterialTheme.colorScheme.surface)
+            ) { pageIndex ->
+                val currentMedia = uiState.attachmentList[pageIndex]
+                Box(
+                    modifier = Modifier.clickable(
+                        enabled = true,
+                        onClick = { viewModel.toggleOverlay() },
+                        indication = null,
+                        interactionSource = null
+                    )
+                ) {
+                    MediaContent(currentMedia)
                 }
             }
         }

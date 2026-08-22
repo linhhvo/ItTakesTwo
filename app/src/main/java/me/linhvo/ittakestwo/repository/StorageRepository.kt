@@ -1,7 +1,9 @@
 package me.linhvo.ittakestwo.repository
 
+import android.content.ContentValues
 import android.content.Context
 import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.HttpClient
@@ -13,9 +15,8 @@ import kotlinx.coroutines.withContext
 import me.linhvo.ittakestwo.R
 import me.linhvo.ittakestwo.network.datasource.StorageNetworkDataSource
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
-import java.nio.file.Files
-import java.nio.file.Paths
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -43,19 +44,19 @@ class StorageRepository @Inject constructor(
 
     suspend fun saveFileToLocalStorage(dirPath: String?, fileName: String?, byteArray: ByteArray?) {
         withContext(Dispatchers.IO) {
-            if (!Files.exists(Paths.get(dirPath))) {
-                Files.createDirectory(Paths.get(dirPath))
-            }
-            fileName?.let {
+            if (dirPath != null && fileName != null) {
                 val file = File(dirPath, fileName)
+                if (!File(dirPath).exists()) {
+                    File(dirPath).mkdirs()
+                }
                 file.createNewFile()
-                FileOutputStream(file, false).use { it.write(byteArray) }
+                FileOutputStream(file, false).use { it.buffered().write(byteArray) }
             }
         }
     }
 
     suspend fun downloadAndSaveFile(bucketId: String, fileName: String?, dirPath: String?) {
-        if (!Files.exists(Paths.get(dirPath, fileName))) {
+        if (!File(dirPath, fileName).exists()) {
             Log.d("debug_download", "downloading file $fileName")
             downloadFileFromNetwork(bucketId, fileName)?.let {
                 saveFileToLocalStorage(dirPath, fileName, it.body<ByteArray>())
@@ -69,4 +70,32 @@ class StorageRepository @Inject constructor(
         storageNetworkDataSource.uploadFile(bucketId, fileName, byteArray)
     }
 
+    suspend fun saveToMediaStore(fileName: String, filePath: String) {
+        withContext(Dispatchers.IO) {
+            val resolver = appContext.contentResolver
+            val collection = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+            val file = File(filePath)
+
+            val imageDetails = ContentValues().apply {
+                put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+                put(MediaStore.Images.Media.IS_PENDING, 1)
+            }
+
+            val imageUri = resolver.insert(collection, imageDetails)
+
+            imageUri?.let {
+                FileInputStream(file).use { inStream ->
+                    resolver.openOutputStream(imageUri)?.use { outStream ->
+                        inStream.copyTo(out = outStream)
+                    }
+                }
+            }
+
+            if (imageUri != null) {
+                imageDetails.clear()
+                imageDetails.put(MediaStore.Images.Media.IS_PENDING, 0)
+                resolver.update(imageUri, imageDetails, null, null)
+            }
+        }
+    }
 }

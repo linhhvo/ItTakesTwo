@@ -1,6 +1,5 @@
 package me.linhvo.ittakestwo.network.datasource
 
-import android.util.Log
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.annotations.SupabaseExperimental
 import io.github.jan.supabase.postgrest.from
@@ -69,7 +68,6 @@ class PairingNetworkDataSource @Inject constructor(
 
             changeFlow.onEach {
                 if (it is PostgresAction.Insert) {
-                    Log.d("debug_pairingStream", "--PAYLOAD-- $it")
                     val pairing = Json.decodeFromJsonElement<NetworkPairing>(it.record)
                     emit(pairing)
                 }
