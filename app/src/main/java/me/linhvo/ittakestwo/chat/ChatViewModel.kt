@@ -3,6 +3,7 @@ package me.linhvo.ittakestwo.chat
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -116,6 +117,15 @@ class ChatViewModel @Inject constructor(
 
     fun resetErrorMessage() {
         _errorMessage.value = null
+    }
+
+    fun matchUrl(content: String): List<Pair<Int, Int>> {
+        val results = mutableListOf<Pair<Int, Int>>()
+
+        Patterns.WEB_URL.matcher(content).results().forEach {
+            results += Pair(it.start(), it.end())
+        }
+        return results
     }
 
     fun markAsRead() {

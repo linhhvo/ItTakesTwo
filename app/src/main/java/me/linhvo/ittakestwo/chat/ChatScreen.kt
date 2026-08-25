@@ -135,6 +135,7 @@ fun ChatScreen(
                 downloadAttachments = viewModel::downloadAttachments,
                 markAsRead = viewModel::markAsRead,
                 openMediaViewer = openMediaViewer,
+                matchUrl = viewModel::matchUrl,
                 modifier = Modifier.weight(1f)
             )
             InputBar(
@@ -176,6 +177,7 @@ fun ChatContent(
     downloadAttachments: (List<Attachment>?) -> Unit,
     markAsRead: () -> Unit,
     openMediaViewer: (String) -> Unit,
+    matchUrl: (String) -> List<Pair<Int, Int>>,
     modifier: Modifier = Modifier
 ) {
     val screenWidth = LocalConfiguration.current.screenWidthDp
@@ -243,9 +245,10 @@ fun ChatContent(
                     Spacer(modifier = Modifier.height(7.dp))
                 }
                 Message(
-                    currentMessage,
-                    messages[currentMessage],
-                    openMediaViewer
+                    message = currentMessage,
+                    attachments = messages[currentMessage],
+                    openMediaViewer = openMediaViewer,
+                    matchUrl = matchUrl
                 )
             }
         }

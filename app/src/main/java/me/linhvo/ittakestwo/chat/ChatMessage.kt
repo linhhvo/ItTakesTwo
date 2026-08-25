@@ -16,6 +16,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.*
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
@@ -33,6 +35,7 @@ import me.linhvo.ittakestwo.util.parseDateTimeToLocalTZ
 fun Message(
     message: Message,
     attachments: List<Attachment>?,
+    matchUrl: (String) -> List<Pair<Int, Int>>,
     openMediaViewer: (String) -> Unit
 ) {
     val screenWidth = LocalConfiguration.current.screenWidthDp
@@ -66,7 +69,7 @@ fun Message(
             )
             if (message.content.isNotEmpty()) {
                 Text(
-                    text = message.content,
+                    text = styledMessageContent(matchUrl, message.content),
                     lineHeight = TextUnit(value = 1.3f, type = TextUnitType.Em),
                     letterSpacing = 0.sp,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -108,7 +111,7 @@ fun Message(
         ) {
             if (message.content.isNotEmpty()) {
                 Text(
-                    text = message.content,
+                    text = styledMessageContent(matchUrl, message.content),
                     color = MaterialTheme.colorScheme.onSecondary,
                     lineHeight = TextUnit(value = 1.3f, type = TextUnitType.Em),
                     letterSpacing = 0.sp,
@@ -202,5 +205,37 @@ fun AttachmentGrid(
                 )
             }
         }
+    }
+}
+
+@Composable
+fun styledMessageContent(matchUrl: (String) -> List<Pair<Int, Int>>, originalContent: String): AnnotatedString {
+    val urlPositions = matchUrl(originalContent)
+    if (!urlPositions.isEmpty()) {
+        return buildAnnotatedString {
+            var start = 0
+            urlPositions.forEach { urlPos ->
+                val validUrl = if (originalContent.substring(urlPos.first, urlPos.second)
+                        .startsWith("http://") || originalContent.substring(urlPos.first, urlPos.second)
+                        .startsWith("https://")
+                ) {
+                    originalContent.substring(urlPos.first, urlPos.second)
+                } else "https://" + originalContent.substring(urlPos.first, urlPos.second)
+
+                append(originalContent.substring(start, urlPos.first))
+                withLink(
+                    LinkAnnotation.Url(
+                        validUrl,
+                        TextLinkStyles(style = SpanStyle(textDecoration = TextDecoration.Underline))
+                    )
+                ) {
+                    append(originalContent.substring(urlPos.first, urlPos.second))
+                }
+                start = urlPos.second
+            }
+            append(originalContent.substring(start, originalContent.length))
+        }
+    } else {
+        return buildAnnotatedString { append(originalContent) }
     }
 }
