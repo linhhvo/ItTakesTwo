@@ -6,8 +6,14 @@ import me.linhvo.ittakestwo.database.model.Attachment
 
 @Dao
 interface AttachmentDao {
+    @Query("select * from message_attachments order by createdAt desc")
+    fun observeAllAttachments(): Flow<List<Attachment>>
+
     @Query("select * from message_attachments where messageId = :messageId")
     suspend fun loadAttachments(messageId: String): List<Attachment>
+
+    @Query("select * from message_attachments where id = :attachmentId")
+    suspend fun loadAttachment(attachmentId: String): Attachment?
 
     @Query("select * from message_attachments where messageId = :messageId")
     fun observeAttachments(messageId: String): Flow<List<Attachment>>

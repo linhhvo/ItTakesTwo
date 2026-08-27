@@ -1,14 +1,13 @@
 package me.linhvo.ittakestwo.chat
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.os.Build
 import android.widget.photopicker.EmbeddedPhotoPickerFeatureInfo
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
-import androidx.annotation.RequiresExtension
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -38,11 +37,15 @@ import me.linhvo.ittakestwo.database.model.Message
 import me.linhvo.ittakestwo.ui.components.Dialog
 import me.linhvo.ittakestwo.util.parseDateTimeToLocalTZ
 
-@RequiresExtension(extension = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, version = 23)
-@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+@SuppressLint("NewApi")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPhotoPickerComposeApi::class, ExperimentalLayoutApi::class)
 @Composable
-fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () -> Unit) {
+fun ChatScreen(
+    viewModel: ChatViewModel = hiltViewModel(),
+    navigateToHome: () -> Unit,
+    openMediaGallery: () -> Unit,
+    openMediaViewer: (String) -> Unit
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val activity = LocalActivity.current
@@ -100,7 +103,8 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () ->
         topBar = {
             ChatTopBar(
                 partner = uiState.partner,
-                navigateToHome = navigateToHome
+                navigateToHome = navigateToHome,
+                openMediaGallery = openMediaGallery
             )
         },
         scaffoldState = scaffoldState,
@@ -130,8 +134,10 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () ->
             }
             ChatContent(
                 messages = uiState.chatMessages,
+                metadata = uiState.messageMetadata,
                 downloadAttachments = viewModel::downloadAttachments,
                 markAsRead = viewModel::markAsRead,
+                openMediaViewer = openMediaViewer,
                 modifier = Modifier.weight(1f)
             )
             InputBar(
@@ -170,8 +176,10 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel(), navigateToHome: () ->
 @Composable
 fun ChatContent(
     messages: Map<Message, List<Attachment>?>,
+    metadata: Map<String, MessageUiMetadata>,
     downloadAttachments: (List<Attachment>?) -> Unit,
     markAsRead: () -> Unit,
+    openMediaViewer: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val screenWidth = LocalConfiguration.current.screenWidthDp
@@ -206,7 +214,7 @@ fun ChatContent(
             val prevMessage = messageList.getOrNull(index + 1)
             val isPrevMessageBySameSender = prevMessage?.senderId == currentMessage.senderId
 
-            val currentMessageSentAt = parseDateTimeToLocalTZ(currentMessage.sentAt!!)
+            val currentMessageSentAt = metadata[currentMessage.id]!!.formattedSentAt
 
             LaunchedEffect(messages[currentMessage]) {
                 if (currentMessage.attachments) {
@@ -239,8 +247,10 @@ fun ChatContent(
                     Spacer(modifier = Modifier.height(7.dp))
                 }
                 Message(
-                    currentMessage,
-                    messages[currentMessage]
+                    message = currentMessage,
+                    metadata = metadata[currentMessage.id],
+                    attachments = messages[currentMessage],
+                    openMediaViewer = openMediaViewer,
                 )
             }
         }

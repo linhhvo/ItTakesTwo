@@ -37,6 +37,12 @@ class ChatRepository @Inject constructor(
 ) {
     private val imageSuffix = appContext.resources.getString(R.string.image_file_suffix)
 
+    suspend fun getMessageById(messageId: String) =
+        messageDao.loadMessage(messageId)
+
+    fun getAttachmentListStream(): Flow<List<Attachment>> =
+        attachmentDao.observeAllAttachments()
+
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getMessageListStream(): Flow<Map<Message, List<Attachment>?>> =
         messageDao.observeMessagesOrderByLatest().flatMapLatest { messages ->

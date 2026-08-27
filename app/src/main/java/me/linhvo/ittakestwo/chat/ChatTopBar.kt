@@ -26,7 +26,8 @@ import me.linhvo.ittakestwo.database.model.User
 @Composable
 fun ChatTopBar(
     partner: User?,
-    navigateToHome: () -> Unit
+    navigateToHome: () -> Unit,
+    openMediaGallery: () -> Unit
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -51,7 +52,7 @@ fun ChatTopBar(
                 }
 
                 Text(
-                    text = partner?.displayName ?: "No partner", fontSize = 25.sp, fontWeight = FontWeight.SemiBold
+                    text = partner?.displayName ?: "No partner", fontSize = 20.sp, fontWeight = FontWeight.SemiBold
                 )
             }
         },
@@ -74,31 +75,31 @@ fun ChatTopBar(
                 horizontalArrangement = Arrangement.spacedBy(20.dp),
                 modifier = Modifier.padding(end = 15.dp)
             ) {
-                Icon(
-                    painter = painterResource(R.drawable.search_icon),
-                    contentDescription = "search icon",
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier
-                        .size(20.dp)
-                        .clickable(enabled = true, onClick = {/*TODO*/ })
-
-                )
+//                Icon(
+//                    painter = painterResource(R.drawable.search_icon),
+//                    contentDescription = "search icon",
+//                    tint = MaterialTheme.colorScheme.onSurface,
+//                    modifier = Modifier
+//                        .size(20.dp)
+//                        .clickable(enabled = true, onClick = {/*TODO*/ })
+//
+//                )
                 Icon(
                     painter = painterResource(R.drawable.folder_icon),
                     contentDescription = "file icon",
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier
                         .size(20.dp)
-                        .clickable(enabled = true, onClick = {/*TODO*/ })
+                        .clickable(enabled = true, onClick = { openMediaGallery() })
                 )
-                Icon(
-                    painter = painterResource(R.drawable.calendar_icon),
-                    contentDescription = "calendar icon",
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier
-                        .size(20.dp)
-                        .clickable(enabled = true, onClick = {/*TODO*/ })
-                )
+//                Icon(
+//                    painter = painterResource(R.drawable.calendar_icon),
+//                    contentDescription = "calendar icon",
+//                    tint = MaterialTheme.colorScheme.onSurface,
+//                    modifier = Modifier
+//                        .size(20.dp)
+//                        .clickable(enabled = true, onClick = {/*TODO*/ })
+//                )
             }
         },
     )

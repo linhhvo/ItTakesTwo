@@ -3,6 +3,7 @@ package me.linhvo.ittakestwo.chat
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -10,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDateTime
 import me.linhvo.ittakestwo.database.model.Attachment
 import me.linhvo.ittakestwo.database.model.Message
 import me.linhvo.ittakestwo.database.model.User
@@ -17,15 +19,22 @@ import me.linhvo.ittakestwo.datastore.ConfigsDataSource
 import me.linhvo.ittakestwo.repository.AuthRepository
 import me.linhvo.ittakestwo.repository.ChatRepository
 import me.linhvo.ittakestwo.repository.PairingRepository
+import me.linhvo.ittakestwo.util.parseDateTimeToLocalTZ
 import javax.inject.Inject
 
 data class ChatUiState(
     val user: User? = null,
     val partner: User? = null,
     val chatMessages: Map<Message, List<Attachment>?> = emptyMap(),
+    val messageMetadata: Map<String, MessageUiMetadata> = emptyMap(),
     val userInput: String = "",
     val errorMessage: String? = null,
     val showNotiPermissionRequest: Boolean = false
+)
+
+data class MessageUiMetadata(
+    val formattedSentAt: LocalDateTime,
+    val urlPositions: List<Pair<Int, Int>> = emptyList()
 )
 
 @HiltViewModel
@@ -40,6 +49,7 @@ class ChatViewModel @Inject constructor(
     private val _userInput = MutableStateFlow("")
     private val _showPermissionRequest = MutableStateFlow(false)
     private val _selectedFiles = MutableStateFlow<MutableMap<Uri, ByteArray?>>(mutableMapOf())
+    private val _messageUiMetadata = MutableStateFlow<MutableMap<String, MessageUiMetadata>>(mutableMapOf())
 
     val uiState: StateFlow<ChatUiState> =
         combine(
@@ -57,6 +67,8 @@ class ChatViewModel @Inject constructor(
                 errorMessage = errorMessage,
                 showNotiPermissionRequest = showPermissionRequest
             )
+        }.combine(_messageUiMetadata) { uiState, metadata ->
+            uiState.copy(messageMetadata = metadata)
         }.catch {
             emit(ChatUiState(errorMessage = it.message))
         }.stateIn(
@@ -118,6 +130,16 @@ class ChatViewModel @Inject constructor(
         _errorMessage.value = null
     }
 
+    fun matchUrl(content: String): List<Pair<Int, Int>> {
+        Log.d("debug_url", "finding url")
+        val results = mutableListOf<Pair<Int, Int>>()
+
+        Patterns.WEB_URL.matcher(content).results().forEach {
+            results += Pair(it.start(), it.end())
+        }
+        return results
+    }
+
     fun markAsRead() {
         viewModelScope.launch {
             chatRepository.markAllAsRead(_currentUserId)
@@ -128,6 +150,19 @@ class ChatViewModel @Inject constructor(
         Log.d("debug_VM", "chat VM init")
         viewModelScope.launch {
             _showPermissionRequest.value = !configs.getInitialConfigs().notiPermissionResponded
+        }
+
+        viewModelScope.launch {
+            chatRepository.getMessageListStream().collect { messageList ->
+                messageList.forEach { message ->
+                    if (!_messageUiMetadata.value.contains(message.key.id)) {
+                        _messageUiMetadata.value[message.key.id] = MessageUiMetadata(
+                            formattedSentAt = parseDateTimeToLocalTZ(message.key.sentAt!!),
+                            urlPositions = matchUrl(message.key.content)
+                        )
+                    }
+                }
+            }
         }
     }
 

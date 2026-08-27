@@ -8,6 +8,9 @@ import me.linhvo.ittakestwo.database.model.Message
 
 @Dao
 interface MessageDao {
+    @Query("select * from chat_messages where id = :messageId")
+    suspend fun loadMessage(messageId: String): Message
+
     @Query(
         """
         select * from chat_messages  

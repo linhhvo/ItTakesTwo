@@ -45,4 +45,10 @@ sealed interface Route : NavKey {
 
     @Serializable
     data object Start : InitialRoute
+
+    @Serializable
+    data class MediaViewer(val attachmentId: String) : Route
+
+    @Serializable
+    data object MediaGallery : Route
 }
