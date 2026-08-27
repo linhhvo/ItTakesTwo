@@ -48,4 +48,7 @@ sealed interface Route : NavKey {
 
     @Serializable
     data class MediaViewer(val attachmentId: String) : Route
+
+    @Serializable
+    data object MediaGallery : Route
 }

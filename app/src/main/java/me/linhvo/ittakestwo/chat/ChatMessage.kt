@@ -37,13 +37,13 @@ import me.linhvo.ittakestwo.database.model.Message
 @Composable
 fun Message(
     message: Message,
-    metadata: MessageUiMetadata,
+    metadata: MessageUiMetadata?,
     attachments: List<Attachment>?,
     openMediaViewer: (String) -> Unit
 ) {
     val screenWidth = LocalConfiguration.current.screenWidthDp
 
-    val timestamp = metadata.formattedSentAt
+    val timestamp = metadata?.formattedSentAt
 
     if (message.isSenderMe) {
         Row(
@@ -64,7 +64,7 @@ fun Message(
                     .padding(end = 3.dp)
             )
             Text(
-                text = "${"%02d".format(timestamp.hour)}:${"%02d".format(timestamp.minute)}",
+                text = "${"%02d".format(timestamp?.hour)}:${"%02d".format(timestamp?.minute)}",
                 lineHeight = TextUnit(value = 1f, type = TextUnitType.Em),
                 fontSize = 9.sp,
                 modifier = Modifier
@@ -73,7 +73,7 @@ fun Message(
             )
             if (message.content.isNotEmpty()) {
                 Text(
-                    text = styledMessageContent(metadata.urlPositions, message.content),
+                    text = styledMessageContent(metadata?.urlPositions ?: emptyList(), message.content),
                     lineHeight = TextUnit(value = 1.3f, type = TextUnitType.Em),
                     letterSpacing = 0.sp,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -114,7 +114,7 @@ fun Message(
         ) {
             if (message.content.isNotEmpty()) {
                 Text(
-                    text = styledMessageContent(metadata.urlPositions, message.content),
+                    text = styledMessageContent(metadata?.urlPositions ?: emptyList(), message.content),
                     color = MaterialTheme.colorScheme.onSecondary,
                     lineHeight = TextUnit(value = 1.3f, type = TextUnitType.Em),
                     letterSpacing = 0.sp,
@@ -146,7 +146,7 @@ fun Message(
             }
 
             Text(
-                text = "${"%02d".format(timestamp.hour)}:${"%02d".format(timestamp.minute)}",
+                text = "${"%02d".format(timestamp?.hour)}:${"%02d".format(timestamp?.minute)}",
                 fontSize = 9.sp,
                 modifier = Modifier
                     .padding(start = 8.dp)
@@ -212,7 +212,7 @@ fun AttachmentGrid(
 
 @Composable
 fun styledMessageContent(
-    urlPositions: List<Pair<Int, Int>> = emptyList(),
+    urlPositions: List<Pair<Int, Int>>,
     originalContent: String
 ): AnnotatedString {
     val context = LocalContext.current

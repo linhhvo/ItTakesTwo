@@ -27,6 +27,7 @@ import io.github.jan.supabase.auth.status.SessionStatus
 import me.linhvo.ittakestwo.auth.SignInScreen
 import me.linhvo.ittakestwo.auth.SignUpScreen
 import me.linhvo.ittakestwo.chat.ChatScreen
+import me.linhvo.ittakestwo.gallery.GalleryScreen
 import me.linhvo.ittakestwo.gallery.ViewerScreen
 import me.linhvo.ittakestwo.home.HomeScreen
 import me.linhvo.ittakestwo.settings.SettingsScreen
@@ -101,6 +102,9 @@ fun AppNavigation(viewModel: NavViewModel = hiltViewModel()) {
                                 backStack.clear()
                                 backStack.add(Route.Home)
                             },
+                            openMediaGallery = {
+                                backStack.add(Route.MediaGallery)
+                            },
                             openMediaViewer = {
                                 backStack.add(Route.MediaViewer(attachmentId = it))
                             }
@@ -108,7 +112,16 @@ fun AppNavigation(viewModel: NavViewModel = hiltViewModel()) {
                     }
 
                     entry<Route.MediaViewer> { key ->
-                        ViewerScreen(targetAttachmentId = key.attachmentId, onBack = { backStack.removeLastOrNull() })
+                        ViewerScreen(
+                            targetAttachmentId = key.attachmentId,
+                            onBack = { backStack.removeLastOrNull() })
+                    }
+
+                    entry<Route.MediaGallery> {
+                        GalleryScreen(
+                            onBack = { backStack.removeLastOrNull() },
+                            openMediaViewer = { backStack.add(Route.MediaViewer(attachmentId = it)) }
+                        )
                     }
 
                     entry<Route.Settings> {

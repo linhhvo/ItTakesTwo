@@ -43,6 +43,7 @@ import me.linhvo.ittakestwo.util.parseDateTimeToLocalTZ
 fun ChatScreen(
     viewModel: ChatViewModel = hiltViewModel(),
     navigateToHome: () -> Unit,
+    openMediaGallery: () -> Unit,
     openMediaViewer: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -102,7 +103,8 @@ fun ChatScreen(
         topBar = {
             ChatTopBar(
                 partner = uiState.partner,
-                navigateToHome = navigateToHome
+                navigateToHome = navigateToHome,
+                openMediaGallery = openMediaGallery
             )
         },
         scaffoldState = scaffoldState,
@@ -246,7 +248,7 @@ fun ChatContent(
                 }
                 Message(
                     message = currentMessage,
-                    metadata = metadata[currentMessage.id]!!,
+                    metadata = metadata[currentMessage.id],
                     attachments = messages[currentMessage],
                     openMediaViewer = openMediaViewer,
                 )
