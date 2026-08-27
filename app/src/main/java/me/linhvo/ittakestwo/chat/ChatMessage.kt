@@ -1,5 +1,7 @@
 package me.linhvo.ittakestwo.chat
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.style.TextDecoration
@@ -22,23 +25,25 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.placeholder
 import me.linhvo.ittakestwo.R
 import me.linhvo.ittakestwo.database.model.Attachment
 import me.linhvo.ittakestwo.database.model.Message
-import me.linhvo.ittakestwo.util.parseDateTimeToLocalTZ
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun Message(
     message: Message,
+    metadata: MessageUiMetadata,
     attachments: List<Attachment>?,
-    matchUrl: (String) -> List<Pair<Int, Int>>,
     openMediaViewer: (String) -> Unit
 ) {
     val screenWidth = LocalConfiguration.current.screenWidthDp
+
+    val timestamp = metadata.formattedSentAt
 
     if (message.isSenderMe) {
         Row(
@@ -48,7 +53,6 @@ fun Message(
                 .fillMaxWidth()
                 .padding(bottom = 5.dp)
         ) {
-            val timestamp = parseDateTimeToLocalTZ(message.sentAt!!)
             val iconTint =
                 if (message.readAt != null) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.tertiaryContainer
             Icon(
@@ -69,7 +73,7 @@ fun Message(
             )
             if (message.content.isNotEmpty()) {
                 Text(
-                    text = styledMessageContent(matchUrl, message.content),
+                    text = styledMessageContent(metadata.urlPositions, message.content),
                     lineHeight = TextUnit(value = 1.3f, type = TextUnitType.Em),
                     letterSpacing = 0.sp,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -87,7 +91,6 @@ fun Message(
 
             if (message.attachments && !attachments.isNullOrEmpty()) {
                 AttachmentGrid(
-                    screenWidth,
                     attachments,
                     openMediaViewer,
                     modifier = Modifier
@@ -111,7 +114,7 @@ fun Message(
         ) {
             if (message.content.isNotEmpty()) {
                 Text(
-                    text = styledMessageContent(matchUrl, message.content),
+                    text = styledMessageContent(metadata.urlPositions, message.content),
                     color = MaterialTheme.colorScheme.onSecondary,
                     lineHeight = TextUnit(value = 1.3f, type = TextUnitType.Em),
                     letterSpacing = 0.sp,
@@ -129,7 +132,6 @@ fun Message(
 
             if (message.attachments && !attachments.isNullOrEmpty()) {
                 AttachmentGrid(
-                    screenWidth,
                     attachments,
                     openMediaViewer,
                     modifier = Modifier
@@ -143,7 +145,6 @@ fun Message(
                 )
             }
 
-            val timestamp = parseDateTimeToLocalTZ(message.sentAt!!)
             Text(
                 text = "${"%02d".format(timestamp.hour)}:${"%02d".format(timestamp.minute)}",
                 fontSize = 9.sp,
@@ -159,11 +160,12 @@ fun Message(
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun AttachmentGrid(
-    screenWidth: Int,
     attachments: List<Attachment>,
     openMediaViewer: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val screenWidth = LocalConfiguration.current.screenWidthDp
+
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(2.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -209,8 +211,11 @@ fun AttachmentGrid(
 }
 
 @Composable
-fun styledMessageContent(matchUrl: (String) -> List<Pair<Int, Int>>, originalContent: String): AnnotatedString {
-    val urlPositions = matchUrl(originalContent)
+fun styledMessageContent(
+    urlPositions: List<Pair<Int, Int>> = emptyList(),
+    originalContent: String
+): AnnotatedString {
+    val context = LocalContext.current
     if (!urlPositions.isEmpty()) {
         return buildAnnotatedString {
             var start = 0
@@ -227,7 +232,15 @@ fun styledMessageContent(matchUrl: (String) -> List<Pair<Int, Int>>, originalCon
                     LinkAnnotation.Url(
                         validUrl,
                         TextLinkStyles(style = SpanStyle(textDecoration = TextDecoration.Underline))
-                    )
+                    ) {
+                        val intent =
+                            Intent(Intent.ACTION_VIEW, validUrl.toUri())
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: ActivityNotFoundException) {
+                            context.startActivity(Intent.createChooser(intent, "Select app to open with"))
+                        }
+                    }
                 ) {
                     append(originalContent.substring(urlPos.first, urlPos.second))
                 }

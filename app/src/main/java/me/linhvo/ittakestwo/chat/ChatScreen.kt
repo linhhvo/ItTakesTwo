@@ -132,10 +132,10 @@ fun ChatScreen(
             }
             ChatContent(
                 messages = uiState.chatMessages,
+                metadata = uiState.messageMetadata,
                 downloadAttachments = viewModel::downloadAttachments,
                 markAsRead = viewModel::markAsRead,
                 openMediaViewer = openMediaViewer,
-                matchUrl = viewModel::matchUrl,
                 modifier = Modifier.weight(1f)
             )
             InputBar(
@@ -174,10 +174,10 @@ fun ChatScreen(
 @Composable
 fun ChatContent(
     messages: Map<Message, List<Attachment>?>,
+    metadata: Map<String, MessageUiMetadata>,
     downloadAttachments: (List<Attachment>?) -> Unit,
     markAsRead: () -> Unit,
     openMediaViewer: (String) -> Unit,
-    matchUrl: (String) -> List<Pair<Int, Int>>,
     modifier: Modifier = Modifier
 ) {
     val screenWidth = LocalConfiguration.current.screenWidthDp
@@ -212,7 +212,7 @@ fun ChatContent(
             val prevMessage = messageList.getOrNull(index + 1)
             val isPrevMessageBySameSender = prevMessage?.senderId == currentMessage.senderId
 
-            val currentMessageSentAt = parseDateTimeToLocalTZ(currentMessage.sentAt!!)
+            val currentMessageSentAt = metadata[currentMessage.id]!!.formattedSentAt
 
             LaunchedEffect(messages[currentMessage]) {
                 if (currentMessage.attachments) {
@@ -246,9 +246,9 @@ fun ChatContent(
                 }
                 Message(
                     message = currentMessage,
+                    metadata = metadata[currentMessage.id]!!,
                     attachments = messages[currentMessage],
                     openMediaViewer = openMediaViewer,
-                    matchUrl = matchUrl
                 )
             }
         }

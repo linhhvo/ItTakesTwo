@@ -7,9 +7,7 @@ import android.provider.MediaStore
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.HttpClient
-import io.ktor.client.request.get
 import io.ktor.client.request.prepareGet
-import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.utils.io.jvm.javaio.copyTo
 import kotlinx.coroutines.Dispatchers
@@ -38,12 +36,6 @@ class StorageRepository @Inject constructor(
             appContext.getExternalFilesDir(type)?.path
         } else null
 
-    suspend fun downloadFileFromNetwork(bucketId: String, fileName: String?): HttpResponse? =
-        storageNetworkDataSource.getDownloadUrl(bucketId, fileName)?.let { url ->
-            HttpClient().use { it.get(url) }
-        }
-
-
     suspend fun saveFileToLocalStorage(dirPath: String?, fileName: String?, byteArray: ByteArray?) {
         withContext(Dispatchers.IO) {
             if (dirPath != null && fileName != null) {
@@ -58,20 +50,23 @@ class StorageRepository @Inject constructor(
     }
 
     suspend fun downloadAndSaveFile(bucketId: String, fileName: String?, dirPath: String?) {
-        Log.d("debug_download", "downloading file $fileName")
         withContext(Dispatchers.IO) {
             if (dirPath != null && fileName != null) {
                 val file = File(dirPath, fileName)
-                if (!File(dirPath).exists()) {
-                    File(dirPath).mkdirs()
-                }
-                file.createNewFile()
 
-                storageNetworkDataSource.getDownloadUrl(bucketId, fileName)?.let { url ->
-                    HttpClient().use { client ->
-                        client.prepareGet(url).execute { res ->
-                            FileOutputStream(file, false).use { out ->
-                                res.bodyAsChannel().copyTo(out)
+                if (!file.exists()) {
+                    if (!File(dirPath).exists()) {
+                        File(dirPath).mkdirs()
+                    }
+                    file.createNewFile()
+
+                    storageNetworkDataSource.getDownloadUrl(bucketId, fileName)?.let { url ->
+                        Log.d("debug_download", "downloading file $fileName")
+                        HttpClient().use { client ->
+                            client.prepareGet(url).execute { res ->
+                                FileOutputStream(file, false).use { out ->
+                                    res.bodyAsChannel().copyTo(out)
+                                }
                             }
                         }
                     }
