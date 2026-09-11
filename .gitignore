@@ -43,8 +43,3 @@ captures/
 local.properties
 google-services.json
 secrets.properties
-
-
-# not including app launch icon for now
-mipmap*
-ic_launcher*
